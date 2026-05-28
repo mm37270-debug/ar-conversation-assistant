@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>수호령 렌즈 시뮬레이터</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+KR:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --green: #00ff88;
+    --green-dim: rgba(0, 255, 136, 0.6);
+    --green-faint: rgba(0, 255, 136, 0.15);
+    --red: #ff4444;
+    --yellow: #ffcc00;
+  }
+
+  body {
+    background: #000;
+    color: var(--green);
+    font-family: 'Noto Sans KR', sans-serif;
+    height: 100dvh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* 카메라 배경 시뮬레이션 */
+  .bg {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(160deg, #0a0f0a 0%, #080d0c 40%, #0b1009 100%);
+    z-index: 0;
+  }
+
+  .bg::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse at 30% 40%, rgba(0,40,20,0.4) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 60%, rgba(0,20,10,0.3) 0%, transparent 50%);
+    z-index: 1;
+  }
+
+  /* 렌즈 오버레이 느낌 */
+  .lens-overlay {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* 스캔라인 효과 */
+  .scanlines {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  /* 메인 HUD 레이어 */
+  .hud {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* 신호등 */
+  .signal {
+    position: absolute;
+    top: 28px;
+    right: 24px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    transition: all 0.4s ease;
+    opacity: 0;
+  }
+
+  .signal.green { background: var(--green); box-shadow: 0 0 12px var(--green); opacity: 1; }
+  .signal.yellow { background: var(--yellow); box-shadow: 0 0 12px var(--yellow); opacity: 1; }
+  .signal.red { background: var(--red); box-shadow: 0 0 12px var(--red); opacity: 1; }
+
+  /* 자막 */
+  .subtitle {
+    position: absolute;
+    bottom: 120px;
+    left: 20px;
+    right: 20px;
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--green-dim);
+    letter-spacing: 0.02em;
+    line-height: 1.6;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  .subtitle.visible { opacity: 1; }
+
+  /* 요약 패널 */
+  .summary {
+    position: absolute;
+    bottom: 160px;
+    left: 20px;
+    right: 20px;
+    opacity: 0;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    transform: translateY(8px);
+  }
+
+  .summary.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .summary-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--green-dim);
+    letter-spacing: 0.15em;
+    margin-bottom: 8px;
+  }
+
+  .summary-text {
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--green);
+    line-height: 1.8;
+    border-left: 1px solid var(--green-faint);
+    padding-left: 12px;
+  }
+
+  /* 응답 제안 */
+  .reply {
+    position: absolute;
+    bottom: 60px;
+    left: 20px;
+    right: 20px;
+    opacity: 0;
+    transition: opacity 0.4s ease 0.1s, transform 0.4s ease 0.1s;
+    transform: translateY(8px);
+  }
+
+  .reply.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reply-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--green-dim);
+    letter-spacing: 0.15em;
+    margin-bottom: 6px;
+  }
+
+  .reply-text {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--green);
+    line-height: 1.6;
+    padding: 8px 12px;
+    border: 1px solid var(--green-faint);
+    background: rgba(0, 255, 136, 0.04);
+  }
+
+  /* 경고 */
+  .warning {
+    position: absolute;
+    top: 50%;
+    left: 20px;
+    right: 20px;
+    transform: translateY(-50%);
+    font-size: 11px;
+    color: var(--yellow);
+    letter-spacing: 0.05em;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    text-align: center;
+  }
+
+  .warning.visible { opacity: 1; }
+
+  /* 단어 검색 */
+  .word-search {
+    position: absolute;
+    top: 24px;
+    left: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .word-search.visible { opacity: 1; }
+
+  .word-term {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--green);
+    letter-spacing: 0.1em;
+  }
+
+  .word-def {
+    font-size: 10px;
+    font-weight: 300;
+    color: var(--green-dim);
+    margin-top: 3px;
+    max-width: 200px;
+    line-height: 1.5;
+  }
+
+  /* 비서 모드 */
+  .assistant {
+    position: absolute;
+    top: 50%;
+    left: 20px;
+    right: 20px;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .assistant.visible { opacity: 1; }
+
+  .assistant-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--green-dim);
+    letter-spacing: 0.15em;
+    margin-bottom: 12px;
+  }
+
+  .assistant-text {
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--green);
+    line-height: 1.9;
+  }
+
+  /* 저장 확인 */
+  .saved {
+    position: absolute;
+    top: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--green);
+    letter-spacing: 0.15em;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .saved.visible { opacity: 1; }
+
+  /* 할일 목록 */
+  .todos {
+    position: absolute;
+    top: 50%;
+    left: 20px;
+    right: 20px;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .todos.visible { opacity: 1; }
+
+  .todos-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--green-dim);
+    letter-spacing: 0.15em;
+    margin-bottom: 10px;
+  }
+
+  .todo-item {
+    font-size: 11px;
+    font-weight: 300;
+    color: var(--green);
+    line-height: 1.8;
+    padding-left: 12px;
+    position: relative;
+  }
+
+  .todo-item::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--green-dim);
+  }
+
+  /* 컨트롤 패널 */
+  .controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(0,0,0,0.9);
+    border-top: 1px solid rgba(0,255,136,0.1);
+    padding: 12px 16px 20px;
+    pointer-events: all;
+  }
+
+  .controls-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    color: rgba(0,255,136,0.3);
+    letter-spacing: 0.2em;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .btn-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .btn {
+    background: rgba(0,255,136,0.05);
+    border: 1px solid rgba(0,255,136,0.2);
+    color: var(--green-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.05em;
+    padding: 8px 4px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 1.4;
+    pointer-events: all;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn:active, .btn.active {
+    background: rgba(0,255,136,0.15);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  /* 모드 표시 */
+  .mode-indicator {
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    color: rgba(0,255,136,0.25);
+    letter-spacing: 0.2em;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .mode-indicator.visible { opacity: 1; }
+
+  /* 깜빡임 애니메이션 */
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .blink { animation: blink 1.5s ease infinite; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* 오류 */
+  .error {
+    position: absolute;
+    top: 50%;
+    left: 20px;
+    right: 20px;
+    transform: translateY(-50%);
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .error.visible { opacity: 1; }
+
+  .error-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--red);
+    letter-spacing: 0.1em;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg"></div>
+<div class="lens-overlay"></div>
+<div class="scanlines"></div>
+
+<div class="hud">
+  <!-- 신호 -->
+  <div class="signal" id="signal"></div>
+
+  <!-- 모드 표시 -->
+  <div class="mode-indicator" id="modeIndicator"></div>
+
+  <!-- 저장 확인 -->
+  <div class="saved" id="saved">SAVED ·</div>
+
+  <!-- 단어 검색 -->
+  <div class="word-search" id="wordSearch">
+    <div class="word-term" id="wordTerm"></div>
+    <div class="word-def" id="wordDef"></div>
+  </div>
+
+  <!-- 경고 -->
+  <div class="warning" id="warning"></div>
+
+  <!-- 비서 모드 -->
+  <div class="assistant" id="assistant">
+    <div class="assistant-label">ASSISTANT ·</div>
+    <div class="assistant-text" id="assistantText"></div>
+  </div>
+
+  <!-- 할일 목록 -->
+  <div class="todos" id="todos">
+    <div class="todos-label">TODAY ·</div>
+    <div id="todoList"></div>
+  </div>
+
+  <!-- 오류 -->
+  <div class="error" id="error">
+    <div class="error-text">CONNECTION LOST<br>SWITCHING TO PHONE ·</div>
+  </div>
+
+  <!-- 자막 -->
+  <div class="subtitle" id="subtitle"></div>
+
+  <!-- 요약 -->
+  <div class="summary" id="summary">
+    <div class="summary-label">SUMMARY ·</div>
+    <div class="summary-text" id="summaryText"></div>
+  </div>
+
+  <!-- 응답 제안 -->
+  <div class="reply" id="reply">
+    <div class="reply-label">REPLY ·</div>
+    <div class="reply-text" id="replyText"></div>
+  </div>
+</div>
+
+<!-- 컨트롤 -->
+<div class="controls">
+  <div class="controls-label">SUHOLYEONG LENS SIMULATOR</div>
+  <div class="btn-grid">
+    <div class="btn" onclick="showScene('idle')">대기<br>상태</div>
+    <div class="btn" onclick="showScene('signal-green')">신호<br>🟢</div>
+    <div class="btn" onclick="showScene('signal-yellow')">신호<br>🟡</div>
+    <div class="btn" onclick="showScene('signal-red')">신호<br>🔴</div>
+    <div class="btn" onclick="showScene('subtitle')">자막</div>
+    <div class="btn" onclick="showScene('summary')">요약</div>
+    <div class="btn" onclick="showScene('reply')">응답<br>제안</div>
+    <div class="btn" onclick="showScene('warning')">경고<br>⚠️</div>
+    <div class="btn" onclick="showScene('word')">단어<br>검색</div>
+    <div class="btn" onclick="showScene('todos')">할일<br>목록</div>
+    <div class="btn" onclick="showScene('assistant')">비서<br>모드</div>
+    <div class="btn" onclick="showScene('error')">오류</div>
+  </div>
+</div>
+
+<script>
+  function hideAll() {
+    document.getElementById('signal').className = 'signal';
+    document.getElementById('subtitle').className = 'subtitle';
+    document.getElementById('summary').className = 'summary';
+    document.getElementById('reply').className = 'reply';
+    document.getElementById('warning').className = 'warning';
+    document.getElementById('wordSearch').className = 'word-search';
+    document.getElementById('assistant').className = 'assistant';
+    document.getElementById('todos').className = 'todos';
+    document.getElementById('saved').className = 'saved';
+    document.getElementById('error').className = 'error';
+    document.getElementById('modeIndicator').className = 'mode-indicator';
+  }
+
+  function showScene(scene) {
+    hideAll();
+
+    // 버튼 active 상태
+    document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+
+    switch(scene) {
+      case 'idle':
+        // 아무것도 없음
+        break;
+
+      case 'signal-green':
+        document.getElementById('signal').className = 'signal green';
+        break;
+
+      case 'signal-yellow':
+        document.getElementById('signal').className = 'signal yellow';
+        break;
+
+      case 'signal-red':
+        document.getElementById('signal').className = 'signal red';
+        break;
+
+      case 'subtitle':
+        document.getElementById('signal').className = 'signal green';
+        document.getElementById('subtitle').className = 'subtitle visible';
+        document.getElementById('subtitle').textContent = '이번 주 금요일까지 제안서 초안 만들어줘야 하는데, 레퍼런스는 지난번 A프로젝트 방향으로...';
+        break;
+
+      case 'summary':
+        document.getElementById('signal').className = 'signal yellow';
+        document.getElementById('subtitle').className = 'subtitle visible';
+        document.getElementById('subtitle').textContent = '...타임라인을 어떻게 잡을지도 같이 생각해봐야 할 것 같아요.';
+        document.getElementById('summary').className = 'summary visible';
+        document.getElementById('summaryText').innerHTML = '금요일까지 제안서 초안<br>A프로젝트 참고 + 비주얼 강조<br>목요일 오전 팀장 중간보고';
+        break;
+
+      case 'reply':
+        document.getElementById('signal').className = 'signal yellow';
+        document.getElementById('summary').className = 'summary visible';
+        document.getElementById('summaryText').innerHTML = '금요일까지 제안서 초안<br>A프로젝트 참고 + 비주얼 강조<br>목요일 오전 팀장 중간보고';
+        document.getElementById('reply').className = 'reply visible';
+        document.getElementById('replyText').textContent = '네, 목요일 오전까지 초안 준비하겠습니다. A프로젝트 자료 참고해서 비주얼이랑 예산안 같이 넣을게요.';
+        break;
+
+      case 'warning':
+        document.getElementById('signal').className = 'signal red';
+        document.getElementById('warning').className = 'warning visible blink';
+        document.getElementById('warning').textContent = '⚠ 장난일 수 있어';
+        break;
+
+      case 'word':
+        document.getElementById('signal').className = 'signal green';
+        document.getElementById('wordSearch').className = 'word-search visible';
+        document.getElementById('wordTerm').textContent = 'KPI';
+        document.getElementById('wordDef').textContent = '핵심성과지표\n목표 달성률 측정 기준';
+        document.getElementById('subtitle').className = 'subtitle visible';
+        document.getElementById('subtitle').textContent = '이번 분기 KPI 맞춰야 해서요...';
+        break;
+
+      case 'todos':
+        document.getElementById('modeIndicator').className = 'mode-indicator visible';
+        document.getElementById('modeIndicator').textContent = 'ASSISTANT ·';
+        document.getElementById('todos').className = 'todos visible';
+        document.getElementById('todoList').innerHTML = `
+          <div class="todo-item">제안서 초안 — 목요일 오전</div>
+          <div class="todo-item">클라이언트 회신</div>
+          <div class="todo-item">금요일 내부 발표 준비</div>
+          <div class="todo-item">예산안 첨부</div>
+        `;
+        break;
+
+      case 'assistant':
+        document.getElementById('modeIndicator').className = 'mode-indicator visible';
+        document.getElementById('modeIndicator').textContent = 'ASSISTANT ·';
+        document.getElementById('assistant').className = 'assistant visible';
+        document.getElementById('assistantText').innerHTML = '오늘 할일 4개 있어.<br>제일 급한 건 클라이언트 회신이야.<br>목요일 오전까지 초안도 필요해.';
+        break;
+
+      case 'error':
+        document.getElementById('error').className = 'error visible';
+        setTimeout(() => {
+          document.getElementById('saved').className = 'saved visible';
+          document.getElementById('saved').textContent = 'PHONE MODE ·';
+        }, 1000);
+        break;
+    }
+
+    // 저장 씬에서만
+    if(scene === 'reply') {
+      setTimeout(() => {
+        document.getElementById('saved').className = 'saved visible blink';
+        document.getElementById('saved').textContent = '· TAP TO SAVE';
+      }, 600);
+    }
+  }
+
+  // 초기 상태
+  showScene('idle');
+</script>
+</body>
+</html>
