@@ -494,7 +494,10 @@ body.dark .back-btn { background: #141414; border-color: #1e1e1e; }
 
   function nextSlide() {
     if(current < total - 1) { current++; updateUI(); }
-    else { window.location.href = 'index.html'; }
+    else { 
+      localStorage.setItem('suho_onboarded', 'true');
+      window.location.href = 'index.html'; 
+    }
   }
 
   function prevSlide() {
