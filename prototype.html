@@ -596,7 +596,8 @@ body {
 [신호] 초록/노랑/빨강 중 하나
 [요약] 핵심 내용 1~2줄
 [대답] 이렇게 대답하면 좋을 것 같아 (1문장)
-[맥락] 상대 감정이나 상황 한 줄`;
+[맥락] 상대 감정이나 상황 한 줄
+[용어] 어려운 전문용어나 영어 단어가 있으면 "단어=뜻" 형식으로 나열. 없으면 이 항목 생략.`;
 
     let result = null;
 
@@ -693,17 +694,17 @@ body {
   }
 
   function parseAndDisplay(text) {
-    // 여러 줄에 걸친 내용도 파싱
     let signal = 'green';
     let summary = '';
     let reply = '';
     let context = '';
+    let terms = '';
 
-    // [태그] 형식 파싱
     const signalMatch = text.match(/\[신호\]\s*(.+)/);
     const summaryMatch = text.match(/\[요약\]\s*(.+)/);
     const replyMatch = text.match(/\[대답\]\s*(.+)/);
     const contextMatch = text.match(/\[맥락\]\s*(.+)/);
+    const termsMatch = text.match(/\[용어\]\s*([\s\S]+?)(?=\[|$)/);
 
     if(signalMatch) {
       const val = signalMatch[1];
@@ -715,30 +716,30 @@ body {
     if(summaryMatch) summary = summaryMatch[1].trim();
     if(replyMatch) reply = replyMatch[1].trim();
     if(contextMatch) context = contextMatch[1].trim();
+    if(termsMatch) terms = termsMatch[1].trim();
 
-    // 형식 안 지켰을 때 — 전체 텍스트를 요약으로
-    if(!summary && !reply) {
-      summary = text.slice(0, 100);
-    }
+    if(!summary && !reply) summary = text.slice(0, 100);
 
     setSignal(signal);
 
     if(displayMode) {
       if(summary) {
-        document.getElementById('summaryText').textContent = summary + (context ? '\n' + context : '');
+        const summaryEl = document.getElementById('summaryText');
+        let summaryContent = summary;
+        if(context) summaryContent += '\n' + context;
+        if(terms) summaryContent += '\n\n📖 ' + terms.replace(/\n/g, ' · ');
+        summaryEl.textContent = summaryContent;
         document.getElementById('summary').classList.add('visible');
       }
       if(reply) {
         document.getElementById('replyText').textContent = reply;
         document.getElementById('reply').classList.add('visible');
       } else if(summary) {
-        // 응답 제안 없으면 기본값
         document.getElementById('replyText').textContent = '잠시 생각해보고 대답해도 좋아.';
         document.getElementById('reply').classList.add('visible');
       }
     }
 
-    // TTS — 딜레이 후 낮은 볼륨으로
     if(soundMode && (summary || reply)) {
       setTimeout(() => {
         const ttsText = (summary ? '요약. ' + summary + '. ' : '') + (reply ? '대답. ' + reply : '');
