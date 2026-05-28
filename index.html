@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>수호령</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Pretendard', -apple-system, sans-serif;
+  background: #ffffff;
+  color: #111111;
+  height: 100dvh;
+  overflow: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+
+body.dark { background: #0a0a0a; color: #f0f0f0; }
+
+/* 화면 영역 */
+.screens {
+  position: fixed;
+  top: 0; bottom: 64px;
+  left: 0; right: 0;
+  overflow: hidden;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.screen.active { display: block; }
+
+/* 탭바 */
+.tabbar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 64px;
+  background: #ffffff;
+  border-top: 1px solid #ebebeb;
+  display: flex;
+  align-items: center;
+  padding: 0 8px 8px;
+  z-index: 1000;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+body.dark .tabbar { background: #0a0a0a; border-top-color: #1e1e1e; }
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  padding: 6px 0;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.tab.active { background: #f5f5f5; }
+body.dark .tab.active { background: #141414; }
+
+.tab-icon { font-size: 20px; }
+.tab-label { font-size: 9px; font-weight: 400; color: #aaaaaa; }
+.tab.active .tab-label { color: #111111; font-weight: 500; }
+body.dark .tab-label { color: #444444; }
+body.dark .tab.active .tab-label { color: #f0f0f0; }
+
+/* ==================== 공통 컴포넌트 ==================== */
+.topbar {
+  position: sticky;
+  top: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 100;
+  background: #ffffff;
+  border-bottom: 1px solid #ebebeb;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+body.dark .topbar { background: #0a0a0a; border-bottom-color: #1e1e1e; }
+
+.topbar-title { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }
+.topbar-right { display: flex; gap: 8px; }
+
+.icon-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  border: 1px solid #ebebeb;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; cursor: pointer;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+body.dark .icon-btn { background: #141414; border-color: #1e1e1e; }
+
+.filter-bar {
+  position: sticky;
+  top: 56px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #ebebeb;
+  overflow-x: auto;
+  z-index: 99;
+  -webkit-overflow-scrolling: touch;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+body.dark .filter-bar { background: #0a0a0a; border-bottom-color: #1e1e1e; }
+.filter-bar::-webkit-scrollbar { display: none; }
+
+.filter-chip {
+  white-space: nowrap;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px; font-weight: 400;
+  color: #666666;
+  background: #f5f5f5;
+  border: 1px solid #ebebeb;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+body.dark .filter-chip { background: #141414; border-color: #1e1e1e; color: #777777; }
+
+.filter-chip.active { background: #111111; color: #ffffff; border-color: #111111; }
+body.dark .filter-chip.active { background: #f0f0f0; color: #0a0a0a; border-color: #f0f0f0; }
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 8px;
+}
+
+.section-title { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+.section-more { font-size: 11px; font-weight: 400; color: #aaaaaa; cursor: pointer; }
+
+.divider { height: 8px; background: #f5f5f5; transition: background 0.3s; }
+body.dark .divider { background: #141414; }
+
+/* ==================== 홈 화면 ==================== */
+.home-content { padding: 20px 20px 12px; }
+
+.status-card {
+  background: #111111;
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.status-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+
+.status-badge { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: rgba(255,255,255,0.1); border-radius: 20px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: #00c471; box-shadow: 0 0 6px #00c471; }
+.status-badge-text { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.8); letter-spacing: 0.03em; }
+.status-mode-toggle { font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.4); cursor: pointer; }
+.status-title { font-size: 20px; font-weight: 600; color: #ffffff; letter-spacing: -0.03em; margin-bottom: 4px; }
+.status-desc { font-size: 12px; font-weight: 300; color: rgba(255,255,255,0.5); line-height: 1.5; }
+
+.status-stats { display: flex; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+.stat { flex: 1; }
+.stat-num { font-size: 18px; font-weight: 600; color: #ffffff; letter-spacing: -0.02em; }
+.stat-label { font-size: 10px; font-weight: 300; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+.todo-card {
+  background: #f5f5f5;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 4px;
+  border: 1px solid #ebebeb;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+body.dark .todo-card { background: #141414; border-color: #1e1e1e; }
+
+.todo-item-home {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #ebebeb;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+body.dark .todo-item-home { border-bottom-color: #1e1e1e; }
+.todo-item-home:last-child { border-bottom: none; }
+
+.check-sm {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #aaaaaa;
+  flex-shrink: 0; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+
+.check-sm.done { background: #00c471; border-color: #00c471; }
+.check-sm.done::after { content: '✓'; font-size: 10px; color: white; }
+
+.todo-tw { flex: 1; }
+.todo-t { font-size: 13px; font-weight: 400; line-height: 1.4; }
+.todo-t.done { text-decoration: line-through; color: #aaaaaa; }
+.todo-s { font-size: 10px; font-weight: 300; color: #aaaaaa; margin-top: 2px; }
+.todo-dl { font-size: 10px; font-weight: 500; color: #f5a623; flex-shrink: 0; margin-top: 2px; }
+.todo-dl.urgent { color: #e53935; }
+
+.convo-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+
+.convo-card {
+  background: #ffffff;
+  border: 1px solid #ebebeb;
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  display: flex; gap: 12px; align-items: flex-start;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+body.dark .convo-card { background: #141414; border-color: #1e1e1e; }
+
+.convo-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: #f5f5f5;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+body.dark .convo-icon { background: #1e1e1e; }
+
+.convo-content { flex: 1; min-width: 0; }
+.convo-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.convo-name { font-size: 13px; font-weight: 500; }
+.convo-time { font-size: 10px; font-weight: 300; color: #aaaaaa; }
+.convo-summary { font-size: 11px; font-weight: 300; color: #666666; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.dark .convo-summary { color: #777777; }
+
+.convo-tags { display: flex; gap: 4px; margin-top: 6px; }
+.tag { font-size: 10px; font-weight: 400; color: #aaaaaa; background: #f5f5f5; border: 1px solid #ebebeb; border-radius: 6px; padding: 2px 6px; transition: background 0.3s, border-color 0.3s; }
+body.dark .tag { background: #1e1e1e; border-color: #222222; color: #555555; }
+
+.quick-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
+.quick-btn { background: #f5f5f5; border: 1px solid #ebebeb; border-radius: 12px; padding: 12px 8px; text-align: center; cursor: pointer; transition: background 0.3s, border-color 0.3s; }
+body.dark .quick-btn { background: #141414; border-color: #1e1e1e; }
+.quick-icon { font-size: 20px; margin-bottom: 5px; }
+.quick-label { font-size: 10px; font-weight: 400; color: #666666; line-height: 1.3; }
+body.dark .quick-label { color: #777777; }
+
+/* ==================== 대화 기록 ==================== */
+.date-label { font-size: 11px; font-weight: 500; color: #aaaaaa; letter-spacing: 0.05em; padding: 14px 20px 6px; }
+body.dark .date-label { color: #444444; }
+
+.convo-card-list {
+  padding: 14px 20px;
+  border-bottom: 1px solid #ebebeb;
+  cursor: pointer;
+  display: flex; gap: 12px; align-items: flex-start;
+  transition: background 0.15s;
+}
+
+body.dark .convo-card-list { border-bottom-color: #1e1e1e; }
+.convo-card-list:active { background: #f5f5f5; }
+body.dark .convo-card-list:active { background: #141414; }
+
+.convo-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  border: 1px solid #ebebeb;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+body.dark .convo-avatar { background: #1e1e1e; border-color: #222222; }
+
+.tag-urgent { color: #e53935; border-color: rgba(229,57,53,0.3); background: rgba(229,57,53,0.05); }
+.tag-warning { color: #f5a623; border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.05); }
+.tag-done { color: #00c471; border-color: rgba(0,196,113,0.3); background: rgba(0,196,113,0.05); }
+
+/* ==================== 할일 ==================== */
+.summary-bar-todo {
+  position: sticky;
+  top: 100px;
+  display: flex;
+  background: #ffffff;
+  border-bottom: 1px solid #ebebeb;
+  z-index: 98;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+body.dark .summary-bar-todo { background: #0a0a0a; border-bottom-color: #1e1e1e; }
+
+.summary-item { flex: 1; padding: 12px 0; text-align: center; border-right: 1px solid #ebebeb; }
+body.dark .summary-item { border-right-color: #1e1e1e; }
+.summary-item:last-child { border-right: none; }
+
+.summary-num { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+.summary-num.s-urgent { color: #e53935; }
+.summary-num.s-done { color: #00c471; }
+.summary-label-sm { font-size: 10px; font-weight: 300; color: #aaaaaa; margin-top: 2px; }
+body.dark .summary-label-sm { color: #444444; }
+
+.todo-row-full {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #ebebeb;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+body.dark .todo-row-full { border-bottom-color: #1e1e1e; }
+.todo-row-full:active { background: #f5f5f5; }
+body.dark .todo-row-full:active { background: #141414; }
+
+.check-lg {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid #cccccc;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; cursor: pointer; flex-shrink: 0; margin-top: 1px;
+}
+
+body.dark .check-lg { border-color: #333333; }
+.check-lg.done { background: #00c471; border-color: #00c471; }
+.check-lg.done::after { content: '✓'; font-size: 11px; color: white; font-weight: 600; }
+.check-lg.urgent { border-color: #e53935; }
+
+.todo-full-text { font-size: 14px; font-weight: 400; line-height: 1.4; margin-bottom: 4px; }
+.todo-full-text.done { text-decoration: line-through; color: #aaaaaa; }
+.todo-full-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.todo-full-source { font-size: 11px; font-weight: 300; color: #aaaaaa; }
+.todo-full-tag { font-size: 10px; font-weight: 400; padding: 2px 6px; border-radius: 6px; border: 1px solid #ebebeb; color: #aaaaaa; background: #f5f5f5; }
+body.dark .todo-full-tag { background: #141414; border-color: #1e1e1e; color: #555555; }
+.todo-full-tag.t-urgent { color: #e53935; border-color: rgba(229,57,53,0.3); background: rgba(229,57,53,0.05); }
+.todo-full-tag.t-soon { color: #f5a623; border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.05); }
+
+.todo-deadline-r { font-size: 12px; font-weight: 500; flex-shrink: 0; margin-top: 1px; color: #f5a623; }
+.todo-deadline-r.urgent { color: #e53935; }
+.todo-deadline-r.done-c { color: #aaaaaa; font-weight: 300; }
+
+.done-divider { display: flex; align-items: center; gap: 12px; padding: 14px 20px 6px; }
+.done-divider-line { flex: 1; height: 1px; background: #ebebeb; }
+body.dark .done-divider-line { background: #1e1e1e; }
+.done-divider-text { font-size: 11px; font-weight: 400; color: #aaaaaa; white-space: nowrap; }
+body.dark .done-divider-text { color: #444444; }
+
+/* ==================== 설정 ==================== */
+.profile-card {
+  padding: 20px;
+  display: flex; align-items: center; gap: 14px;
+  border-bottom: 8px solid #f5f5f5;
+  transition: border-color 0.3s;
+}
+
+body.dark .profile-card { border-bottom-color: #141414; }
+
+.profile-avatar { width: 52px; height: 52px; border-radius: 50%; background: #111111; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+body.dark .profile-avatar { background: #f0f0f0; }
+.profile-name { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 3px; }
+.profile-email { font-size: 12px; font-weight: 300; color: #aaaaaa; }
+body.dark .profile-email { color: #555555; }
+
+.section-label { font-size: 11px; font-weight: 500; color: #aaaaaa; letter-spacing: 0.08em; padding: 16px 20px 8px; }
+body.dark .section-label { color: #444444; }
+
+.setting-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #ebebeb;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.3s;
+}
+
+body.dark .setting-row { border-bottom-color: #1e1e1e; }
+.setting-row:active { background: #f5f5f5; }
+body.dark .setting-row:active { background: #141414; }
+
+.setting-left { display: flex; align-items: center; gap: 12px; }
+.setting-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.setting-title { font-size: 14px; font-weight: 400; margin-bottom: 2px; }
+.setting-desc { font-size: 11px; font-weight: 300; color: #aaaaaa; }
+body.dark .setting-desc { color: #555555; }
+.setting-right { display: flex; align-items: center; gap: 8px; }
+.setting-value { font-size: 13px; font-weight: 300; color: #aaaaaa; }
+body.dark .setting-value { color: #555555; }
+.setting-arrow { font-size: 12px; color: #cccccc; }
+body.dark .setting-arrow { color: #333333; }
+
+.toggle {
+  width: 44px; height: 26px; border-radius: 13px;
+  background: #ebebeb; position: relative; cursor: pointer;
+  transition: background 0.2s; flex-shrink: 0;
+}
+
+body.dark .toggle { background: #333333; }
+.toggle.on { background: #111111; }
+body.dark .toggle.on { background: #f0f0f0; }
+
+.toggle::after {
+  content: ''; position: absolute;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: white; top: 3px; left: 3px;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+body.dark .toggle.on::after { background: #111111; }
+.toggle.on::after { transform: translateX(18px); }
+
+.ai-chips { display: flex; gap: 6px; padding: 10px 20px 14px; border-bottom: 1px solid #ebebeb; transition: border-color 0.3s; }
+body.dark .ai-chips { border-bottom-color: #1e1e1e; }
+
+.ai-chip { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 400; color: #666666; background: #f5f5f5; border: 1px solid #ebebeb; cursor: pointer; transition: all 0.2s; }
+body.dark .ai-chip { background: #141414; border-color: #1e1e1e; color: #777777; }
+.ai-chip.selected { background: #111111; color: #ffffff; border-color: #111111; }
+body.dark .ai-chip.selected { background: #f0f0f0; color: #0a0a0a; border-color: #f0f0f0; }
+
+.speaker-row { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid #ebebeb; cursor: pointer; transition: border-color 0.3s; }
+body.dark .speaker-row { border-bottom-color: #1e1e1e; }
+.speaker-avatar { width: 36px; height: 36px; border-radius: 50%; background: #f5f5f5; border: 1px solid #ebebeb; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; transition: background 0.3s; }
+body.dark .speaker-avatar { background: #1e1e1e; border-color: #222222; }
+.speaker-name { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+body.dark .speaker-name { color: #f0f0f0; }
+.speaker-meta { font-size: 11px; font-weight: 300; color: #aaaaaa; }
+body.dark .speaker-meta { color: #555555; }
+.speaker-badge { font-size: 10px; font-weight: 500; padding: 3px 8px; border-radius: 10px; }
+.speaker-badge.recognized { color: #00c471; background: rgba(0,196,113,0.1); }
+.speaker-badge.unset { color: #f5a623; background: rgba(245,166,35,0.1); }
+
+.danger-title { font-size: 14px; font-weight: 400; color: #e53935; }
+.version-text { text-align: center; font-size: 11px; font-weight: 300; color: #cccccc; padding: 20px; }
+body.dark .version-text { color: #333333; }
+
+/* 상세 패널 */
+.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+.detail-overlay.visible { opacity: 1; pointer-events: all; }
+.detail-panel { position: fixed; bottom: 64px; left: 0; right: 0; background: #ffffff; border-radius: 20px 20px 0 0; z-index: 201; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4,0,0.2,1); max-height: 80dvh; overflow-y: auto; }
+body.dark .detail-panel { background: #0f0f0f; }
+.detail-panel.visible { transform: translateY(0); }
+.detail-handle { width: 36px; height: 4px; background: #ebebeb; border-radius: 2px; margin: 12px auto 0; }
+body.dark .detail-handle { background: #222222; }
+.detail-content { padding: 20px; }
+.detail-name { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 4px; }
+.detail-meta-text { font-size: 12px; font-weight: 300; color: #aaaaaa; margin-bottom: 20px; }
+.detail-sec-title { font-size: 11px; font-weight: 600; color: #aaaaaa; letter-spacing: 0.08em; margin-bottom: 10px; }
+.detail-summary-box { font-size: 13px; font-weight: 300; color: #333333; line-height: 1.8; padding: 14px; background: #f5f5f5; border-radius: 12px; margin-bottom: 20px; }
+body.dark .detail-summary-box { background: #141414; color: #cccccc; }
+.bubble { margin-bottom: 10px; }
+.bubble-name { font-size: 10px; font-weight: 500; color: #aaaaaa; margin-bottom: 4px; padding-left: 4px; }
+.bubble-text { font-size: 12px; font-weight: 300; line-height: 1.6; padding: 10px 14px; border-radius: 12px; background: #f5f5f5; color: #333333; }
+body.dark .bubble-text { background: #141414; color: #cccccc; }
+.bubble-text.mine { background: #111111; color: #ffffff; margin-left: 40px; }
+body.dark .bubble-text.mine { background: #f0f0f0; color: #111111; }
+.close-btn { width: 100%; padding: 14px; background: #f5f5f5; border-radius: 12px; text-align: center; font-size: 14px; font-weight: 500; color: #666666; cursor: pointer; margin-top: 8px; margin-bottom: 20px; }
+body.dark .close-btn { background: #141414; color: #777777; }
+</style>
+</head>
+<body>
+
+<!-- 화면들 -->
+<div class="screens">
+
+  <!-- 홈 -->
+  <div class="screen active" id="screen-home">
+    <div class="topbar">
+      <div class="topbar-title">수호령</div>
+      <div class="topbar-right">
+        <div class="icon-btn">⚙️</div>
+      </div>
+    </div>
+    <div class="home-content">
+      <div class="status-card">
+        <div class="status-top">
+          <div class="status-badge">
+            <div class="status-dot"></div>
+            <div class="status-badge-text" id="modeName">대화 보조 모드</div>
+          </div>
+          <div class="status-mode-toggle" onclick="toggleMode()">비서 모드 켜기 →</div>
+        </div>
+        <div class="status-title" id="modeTitle">준비됐어</div>
+        <div class="status-desc" id="modeDesc">앞에 사람이 감지되면 자동으로 작동해.<br>안경 프레임을 탭해서 제어할 수 있어.</div>
+        <div class="status-stats">
+          <div class="stat"><div class="stat-num">3</div><div class="stat-label">오늘 대화</div></div>
+          <div class="stat"><div class="stat-num">4</div><div class="stat-label">할일 남음</div></div>
+          <div class="stat"><div class="stat-num">2h</div><div class="stat-label">사용 시간</div></div>
+        </div>
+      </div>
+
+      <div class="section-header"><div class="section-title">오늘 할일</div><div class="section-more" onclick="switchTab('todo')">전체 보기</div></div>
+      <div class="todo-card" style="margin-bottom:16px;">
+        <div class="todo-item-home" onclick="toggleSmCheck(this)">
+          <div class="check-sm urgent-border" style="border-color:#e53935;"></div>
+          <div class="todo-tw"><div class="todo-t">클라이언트 회신</div><div class="todo-s">김팀장 · 오늘 10:23</div></div>
+          <div class="todo-dl urgent">오늘</div>
+        </div>
+        <div class="todo-item-home" onclick="toggleSmCheck(this)">
+          <div class="check-sm" style="border-color:#e53935;"></div>
+          <div class="todo-tw"><div class="todo-t">제안서 초안 작성</div><div class="todo-s">김팀장 · 오늘 10:23</div></div>
+          <div class="todo-dl urgent">목요일</div>
+        </div>
+        <div class="todo-item-home" onclick="toggleSmCheck(this)">
+          <div class="check-sm"></div>
+          <div class="todo-tw"><div class="todo-t">금요일 내부 발표 준비</div><div class="todo-s">김팀장 · 오늘 10:23</div></div>
+          <div class="todo-dl">금요일</div>
+        </div>
+        <div class="todo-item-home" onclick="toggleSmCheck(this)">
+          <div class="check-sm done"></div>
+          <div class="todo-tw"><div class="todo-t done">예산안 검토</div><div class="todo-s">박과장 · 어제</div></div>
+          <div class="todo-dl" style="color:#aaaaaa;">완료</div>
+        </div>
+      </div>
+
+      <div class="section-header"><div class="section-title">최근 대화</div><div class="section-more" onclick="switchTab('convo')">전체 보기</div></div>
+      <div class="convo-list">
+        <div class="convo-card" onclick="openDetail('work1')">
+          <div class="convo-icon">👔</div>
+          <div class="convo-content">
+            <div class="convo-top"><div class="convo-name">김팀장 · 업무</div><div class="convo-time">오늘 10:23</div></div>
+            <div class="convo-summary">제안서 초안 + 클라이언트 방향 변경 건 논의</div>
+            <div class="convo-tags"><div class="tag">지시사항 3개</div><div class="tag">급함</div></div>
+          </div>
+        </div>
+        <div class="convo-card" onclick="openDetail('daily1')">
+          <div class="convo-icon">☕</div>
+          <div class="convo-content">
+            <div class="convo-top"><div class="convo-name">이동료 · 일상</div><div class="convo-time">오늘 09:10</div></div>
+            <div class="convo-summary">점심 뭐 먹을지 얘기, 장난 감지 1회</div>
+            <div class="convo-tags"><div class="tag">일상</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header"><div class="section-title">빠른 설정</div></div>
+      <div class="quick-grid">
+        <div class="quick-btn"><div class="quick-icon">🤖</div><div class="quick-label">AI 변경</div></div>
+        <div class="quick-btn"><div class="quick-icon">💾</div><div class="quick-label">자동저장</div></div>
+        <div class="quick-btn"><div class="quick-icon">🗣️</div><div class="quick-label">화자관리</div></div>
+        <div class="quick-btn" onclick="switchTab('settings')"><div class="quick-icon">🕶️</div><div class="quick-label">안경연결</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 대화 기록 -->
+  <div class="screen" id="screen-convo">
+    <div class="topbar">
+      <div class="topbar-title">대화 기록</div>
+      <div class="icon-btn">🔍</div>
+    </div>
+    <div class="filter-bar">
+      <div class="filter-chip active" onclick="setFilter(this)">전체</div>
+      <div class="filter-chip" onclick="setFilter(this)">업무</div>
+      <div class="filter-chip" onclick="setFilter(this)">일상</div>
+      <div class="filter-chip" onclick="setFilter(this)">지시사항 있음</div>
+      <div class="filter-chip" onclick="setFilter(this)">저장됨</div>
+    </div>
+    <div class="date-label">오늘</div>
+    <div class="convo-card-list" onclick="openDetail('work1')">
+      <div class="convo-avatar">👔</div>
+      <div class="convo-content">
+        <div class="convo-top"><div class="convo-name">김팀장 · 업무</div><div class="convo-time">10:23</div></div>
+        <div class="convo-summary">제안서 초안이랑 클라이언트 방향 변경 건 얘기했어.</div>
+        <div class="convo-tags"><div class="tag tag-urgent">지시사항 3개</div><div class="tag tag-warning">목요일 마감</div></div>
+      </div>
+    </div>
+    <div class="convo-card-list" onclick="openDetail('daily1')">
+      <div class="convo-avatar">☕</div>
+      <div class="convo-content">
+        <div class="convo-top"><div class="convo-name">이동료 · 일상</div><div class="convo-time">09:10</div></div>
+        <div class="convo-summary">점심 뭐 먹을지 얘기. 장난 감지 1회 있었어.</div>
+        <div class="convo-tags"><div class="tag">일상</div><div class="tag tag-warning">장난 1회</div></div>
+      </div>
+    </div>
+    <div class="date-label">어제</div>
+    <div class="convo-card-list" onclick="openDetail('work2')">
+      <div class="convo-avatar">❓</div>
+      <div class="convo-content">
+        <div class="convo-top"><div class="convo-name" style="color:#aaaaaa">미지정 1 · 업무</div><div class="convo-time">17:44</div></div>
+        <div class="convo-summary">예산안 검토 요청. Q3 수치 확인 필요하다고 했어.</div>
+        <div class="convo-tags"><div class="tag tag-done">완료</div><div class="tag tag-warning">이름 지정 필요</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 할일 -->
+  <div class="screen" id="screen-todo">
+    <div class="topbar"><div class="topbar-title">할일</div></div>
+    <div class="filter-bar">
+      <div class="filter-chip active" onclick="setFilter(this)">전체</div>
+      <div class="filter-chip" onclick="setFilter(this)">오늘</div>
+      <div class="filter-chip" onclick="setFilter(this)">업무</div>
+      <div class="filter-chip" onclick="setFilter(this)">완료</div>
+    </div>
+    <div class="summary-bar-todo">
+      <div class="summary-item"><div class="summary-num s-urgent">2</div><div class="summary-label-sm">급함</div></div>
+      <div class="summary-item"><div class="summary-num">2</div><div class="summary-label-sm">예정</div></div>
+      <div class="summary-item"><div class="summary-num s-done">1</div><div class="summary-label-sm">완료</div></div>
+    </div>
+    <div class="date-label">오늘</div>
+    <div class="todo-row-full" onclick="toggleLgCheck(this)">
+      <div class="check-lg urgent"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="todo-full-text">클라이언트 회신</div>
+        <div class="todo-full-meta"><div class="todo-full-source">김팀장 · 오늘 10:23</div><div class="todo-full-tag t-urgent">오늘 마감</div></div>
+      </div>
+      <div class="todo-deadline-r urgent">오늘</div>
+    </div>
+    <div class="todo-row-full" onclick="toggleLgCheck(this)">
+      <div class="check-lg urgent"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="todo-full-text">제안서 초안 작성</div>
+        <div class="todo-full-meta"><div class="todo-full-source">김팀장 · 오늘 10:23</div><div class="todo-full-tag t-urgent">목요일 오전</div></div>
+      </div>
+      <div class="todo-deadline-r urgent">목요일</div>
+    </div>
+    <div class="date-label">이번 주</div>
+    <div class="todo-row-full" onclick="toggleLgCheck(this)">
+      <div class="check-lg"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="todo-full-text">금요일 내부 발표 준비</div>
+        <div class="todo-full-meta"><div class="todo-full-source">김팀장 · 오늘 10:23</div><div class="todo-full-tag t-soon">금요일</div></div>
+      </div>
+      <div class="todo-deadline-r">금요일</div>
+    </div>
+    <div class="todo-row-full" onclick="toggleLgCheck(this)">
+      <div class="check-lg"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="todo-full-text">거래처 미팅 일정 확정</div>
+        <div class="todo-full-meta"><div class="todo-full-source">박과장 · 어제 14:20</div><div class="todo-full-tag t-soon">다음주 화요일</div></div>
+      </div>
+      <div class="todo-deadline-r">화요일</div>
+    </div>
+    <div class="done-divider"><div class="done-divider-line"></div><div class="done-divider-text">완료 1개</div><div class="done-divider-line"></div></div>
+    <div class="todo-row-full" onclick="toggleLgCheck(this)">
+      <div class="check-lg done"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="todo-full-text done">예산안 검토</div>
+        <div class="todo-full-meta"><div class="todo-full-source">미지정 1 · 어제 17:44</div></div>
+      </div>
+      <div class="todo-deadline-r done-c">완료</div>
+    </div>
+  </div>
+
+  <!-- 설정 -->
+  <div class="screen" id="screen-settings">
+    <div class="topbar"><div class="topbar-title">설정</div></div>
+    <div class="profile-card">
+      <div class="profile-avatar">👁</div>
+      <div style="flex:1;">
+        <div class="profile-name">박영주</div>
+        <div class="profile-email">youngjoo@gmail.com</div>
+      </div>
+      <div class="setting-arrow">›</div>
+    </div>
+
+    <div class="section-label">화면</div>
+    <div class="setting-row">
+      <div class="setting-left">
+        <div class="setting-icon" style="background:#f3e5f5;">🌙</div>
+        <div>
+          <div class="setting-title">다크 모드</div>
+          <div class="setting-desc">어두운 화면으로 전환</div>
+        </div>
+      </div>
+      <div class="toggle" id="darkToggle" onclick="toggleDarkMode()"></div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-label">AI 설정</div>
+    <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:10px;">
+      <div class="setting-left">
+        <div class="setting-icon" style="background:#e8f5e9;">🤖</div>
+        <div><div class="setting-title">기본 AI</div></div>
+      </div>
+      <div class="ai-chips" style="padding:0;border:none;">
+        <div class="ai-chip selected" onclick="selectAI(this)">Gemini</div>
+        <div class="ai-chip" onclick="selectAI(this)">Claude</div>
+        <div class="ai-chip" onclick="selectAI(this)">ChatGPT</div>
+      </div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-left"><div class="setting-icon" style="background:#fce4ec;">🔑</div><div><div class="setting-title">Claude API 키</div><div class="setting-desc">직접 키 입력 시 무제한</div></div></div>
+      <div class="setting-right"><div class="setting-value">미입력</div><div class="setting-arrow">›</div></div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-left"><div class="setting-icon" style="background:#fce4ec;">🔑</div><div><div class="setting-title">ChatGPT API 키</div><div class="setting-desc">직접 키 입력 시 무제한</div></div></div>
+      <div class="setting-right"><div class="setting-value">미입력</div><div class="setting-arrow">›</div></div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-label">모드 설정</div>
+    <div class="setting-row">
+      <div class="setting-left"><div class="setting-icon" style="background:#e3f2fd;">💼</div><div><div class="setting-title">업무 응답 제안</div><div class="setting-desc">업무 대화 중 자동 켜짐</div></div></div>
+      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-left"><div class="setting-icon" style="background:#f3e5f5;">😄</div><div><div class="setting-title">장난/빈정거림 감지</div><div class="setting-desc">일상 대화에서 톤 분석</div></div></div>
+      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-left"><div class="setting-icon" style="background:#fff8e1;">📝</div><div><div class="setting-title">업무 커스텀 단어</div><div class="setting-desc">우리 회사 전용 용어 추가</div></div></div>
+      <div class="setting-right"><div class="setting-value">3개</div><div class="setting-arrow">›</div></div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-label">저장 설정</div>
+    <div class="setting-row">
+      <div class="setting-left"><div class="setting-icon" style="background:#e3f2fd;">💾</div><div><div class="setting-title">대화 자동 저장</div><div class="setting-desc">할일 목록 자동 생성</div></div></div>
+      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-left"><div class="setting-icon" style="background:#e3f2fd;">📅</div><div><div class="setting-title">보관 기간</div></div></div>
+      <div class="setting-right"><div class="setting-value">30일</div><div class="setting-arrow">›</div></div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-left"><div class="setting-icon" style="background:#e3f2fd;">☁️</div><div><div class="setting-title">저장 위치</div><div class="setting-desc">구글 드라이브 연동</div></div></div>
+      <div class="setting-right"><div class="setting-value">연결됨</div><div class="setting-arrow">›</div></div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-label">화자 관리</div>
+    <div class="speaker-row">
+      <div class="speaker-avatar">👔</div>
+      <div style="flex:1;"><div class="speaker-name">김팀장</div><div class="speaker-meta">대화 12회 · 중요 ⭐</div></div>
+      <div class="speaker-badge recognized">인식됨</div>
+    </div>
+    <div class="speaker-row">
+      <div class="speaker-avatar">❓</div>
+      <div style="flex:1;"><div class="speaker-name" style="color:#aaaaaa">미지정 1</div><div class="speaker-meta">대화 1회 · 어제</div></div>
+      <div class="speaker-badge unset">이름 지정</div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-label">프라이버시</div>
+    <div class="setting-row">
+      <div class="setting-left"><div class="setting-icon" style="background:#fce4ec;">🔒</div><div><div class="setting-title">민감 키워드 필터</div><div class="setting-desc">저장에서 자동 제외</div></div></div>
+      <div class="setting-right"><div class="setting-value">0개</div><div class="setting-arrow">›</div></div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-left"><div class="setting-icon" style="background:#fce4ec;">📱</div><div><div class="setting-title">안경 연결</div><div class="setting-desc">Rokid Glasses 페어링</div></div></div>
+      <div class="setting-right"><div class="setting-value" style="color:#00c471">연결됨</div><div class="setting-arrow">›</div></div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-label">데이터</div>
+    <div class="setting-row"><div class="danger-title">대화 기록 전체 삭제</div><div class="setting-arrow">›</div></div>
+    <div class="setting-row"><div class="danger-title">계정 연결 해제</div><div class="setting-arrow">›</div></div>
+
+    <div class="version-text">수호령 v0.1.0 · 박영주 제작</div>
+  </div>
+
+</div>
+
+<!-- 탭바 -->
+<div class="tabbar">
+  <div class="tab active" onclick="switchTab('home')">
+    <div class="tab-icon">🏠</div>
+    <div class="tab-label">홈</div>
+  </div>
+  <div class="tab" onclick="switchTab('convo')">
+    <div class="tab-icon">💬</div>
+    <div class="tab-label">대화</div>
+  </div>
+  <div class="tab" onclick="switchTab('todo')">
+    <div class="tab-icon">✅</div>
+    <div class="tab-label">할일</div>
+  </div>
+  <div class="tab" onclick="switchTab('settings')">
+    <div class="tab-icon">⚙️</div>
+    <div class="tab-label">설정</div>
+  </div>
+</div>
+
+<!-- 상세 패널 -->
+<div class="detail-overlay" id="overlay" onclick="closeDetail()"></div>
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-handle"></div>
+  <div class="detail-content" id="detailContent"></div>
+</div>
+
+<script>
+  let isDark = false;
+
+  const tabs = { home: 0, convo: 1, todo: 2, settings: 3 };
+  const screenIds = ['screen-home', 'screen-convo', 'screen-todo', 'screen-settings'];
+
+  function switchTab(name) {
+    screenIds.forEach(id => document.getElementById(id).classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      t.classList.toggle('active', i === tabs[name]);
+    });
+  }
+
+  function toggleDarkMode() {
+    isDark = !isDark;
+    document.body.classList.toggle('dark', isDark);
+    document.getElementById('darkToggle').classList.toggle('on', isDark);
+  }
+
+  function toggleMode() {
+    const name = document.getElementById('modeName');
+    const title = document.getElementById('modeTitle');
+    const desc = document.getElementById('modeDesc');
+    const btn = document.querySelector('.status-mode-toggle');
+    if(name.textContent === '대화 보조 모드') {
+      name.textContent = '비서 모드';
+      title.textContent = '뭐든 물어봐';
+      desc.textContent = '말로 할일 확인, 대화 검색,\n뭐든지 도와줄게.';
+      btn.textContent = '대화 보조 모드로 ←';
+    } else {
+      name.textContent = '대화 보조 모드';
+      title.textContent = '준비됐어';
+      desc.textContent = '앞에 사람이 감지되면 자동으로 작동해.\n안경 프레임을 탭해서 제어할 수 있어.';
+      btn.textContent = '비서 모드 켜기 →';
+    }
+  }
+
+  function toggleSmCheck(item) {
+    const c = item.querySelector('.check-sm');
+    const t = item.querySelector('.todo-t');
+    c.classList.toggle('done');
+    t.classList.toggle('done');
+  }
+
+  function toggleLgCheck(item) {
+    const c = item.querySelector('.check-lg');
+    const t = item.querySelector('.todo-full-text');
+    const d = item.querySelector('.todo-deadline-r');
+    c.classList.toggle('done');
+    c.classList.remove('urgent');
+    t.classList.toggle('done');
+    if(d) { d.classList.toggle('done-c'); if(d.classList.contains('done-c')) d.textContent = '완료'; }
+  }
+
+  function setFilter(el) {
+    el.closest('.filter-bar').querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function selectAI(el) {
+    el.closest('.setting-row').querySelectorAll('.ai-chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  const details = {
+    work1: { name: '김팀장 · 업무', meta: '오늘 10:23 · 12분', summary: '제안서 초안을 목요일 오전까지 준비해야 해. A프로젝트 참고하되 비주얼 강조하고 예산안 첨부. 금요일 내부 발표도 있어.', transcript: [{ name: '김팀장', text: '이번 주 금요일까지 클라이언트 제안서 초안 만들어줘야 하는데...', mine: false }, { name: '나', text: '네, 목요일 오전까지 초안 준비하겠습니다.', mine: true }] },
+    daily1: { name: '이동료 · 일상', meta: '오늘 09:10 · 5분', summary: '점심 뭐 먹을지 얘기했어. 장난 1회 감지됐어.', transcript: [{ name: '이동료', text: '야 오늘 점심 뭐 먹을 거야?', mine: false }, { name: '나', text: '글쎄 아무거나?', mine: true }] },
+    work2: { name: '미지정 1 · 업무', meta: '어제 17:44 · 8분', summary: '예산안 검토 요청 받았어. Q3 수치 확인하고 보내달라고 했는데 완료.', transcript: [{ name: '미지정 1', text: 'Q3 예산안 검토해서 보내줄 수 있어요?', mine: false }, { name: '나', text: '네 확인해볼게요.', mine: true }] }
+  };
+
+  function openDetail(id) {
+    const d = details[id];
+    let html = `<div class="detail-name">${d.name}</div><div class="detail-meta-text">${d.meta}</div>`;
+    html += `<div class="detail-sec-title">요약</div><div class="detail-summary-box">${d.summary}</div>`;
+    html += `<div class="detail-sec-title">대화 내용</div>`;
+    d.transcript.forEach(t => {
+      html += `<div class="bubble">${!t.mine ? `<div class="bubble-name">${t.name}</div>` : ''}<div class="bubble-text ${t.mine ? 'mine' : ''}">${t.text}</div></div>`;
+    });
+    html += `<div class="close-btn" onclick="closeDetail()">닫기</div>`;
+    document.getElementById('detailContent').innerHTML = html;
+    document.getElementById('overlay').classList.add('visible');
+    document.getElementById('detailPanel').classList.add('visible');
+  }
+
+  function closeDetail() {
+    document.getElementById('overlay').classList.remove('visible');
+    document.getElementById('detailPanel').classList.remove('visible');
+  }
+</script>
+</body>
+</html>
