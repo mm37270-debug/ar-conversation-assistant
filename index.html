@@ -1164,9 +1164,12 @@ body.dark .close-btn { background: #141414; color: #777777; }
   }
 
   // 공통 모달
+  let _modalSaveCallback = null;
+
   function showModal(content, onSave, noSaveBtn) {
     const existing = document.getElementById('suhoModal');
     if(existing) existing.remove();
+    _modalSaveCallback = onSave;
 
     const modal = document.createElement('div');
     modal.id = 'suhoModal';
@@ -1176,30 +1179,38 @@ body.dark .close-btn { background: #141414; color: #777777; }
     const bg = isDarkMode ? '#0f0f0f' : '#ffffff';
     const border = isDarkMode ? '#1e1e1e' : '#ebebeb';
     const textColor = isDarkMode ? '#f0f0f0' : '#111111';
+    const btnBg = isDarkMode ? '#f0f0f0' : '#111111';
+    const btnColor = isDarkMode ? '#111111' : '#ffffff';
 
     modal.innerHTML = `
       <div style="width:100%;background:${bg};border-radius:20px 20px 0 0;padding:20px 20px 40px;max-height:80dvh;overflow-y:auto;color:${textColor};">
         <div style="width:36px;height:4px;background:${border};border-radius:2px;margin:0 auto 20px;"></div>
-        ${content}
+        <div id="modalBody">${content}</div>
         ${!noSaveBtn ? `
           <div style="display:flex;gap:8px;margin-top:8px;">
-            <div onclick="closeModal()" style="flex:1;padding:13px;border:1px solid ${border};border-radius:10px;text-align:center;font-size:14px;color:#666666;cursor:pointer;">취소</div>
-            <div onclick="(${onSave ? onSave.toString() : '()=>{}'})()" style="flex:1;padding:13px;background:${isDarkMode?'#f0f0f0':'#111111'};border-radius:10px;text-align:center;font-size:14px;color:${isDarkMode?'#111111':'#ffffff'};font-weight:500;cursor:pointer;">저장</div>
+            <div id="modalCancelBtn" style="flex:1;padding:13px;border:1px solid ${border};border-radius:10px;text-align:center;font-size:14px;color:#666666;cursor:pointer;">취소</div>
+            <div id="modalSaveBtn" style="flex:1;padding:13px;background:${btnBg};border-radius:10px;text-align:center;font-size:14px;color:${btnColor};font-weight:500;cursor:pointer;">저장</div>
           </div>
         ` : `
-          <div onclick="closeModal()" style="margin-top:12px;padding:13px;border:1px solid ${border};border-radius:10px;text-align:center;font-size:14px;color:#666666;cursor:pointer;">닫기</div>
+          <div id="modalCancelBtn" style="margin-top:12px;padding:13px;border:1px solid ${border};border-radius:10px;text-align:center;font-size:14px;color:#666666;cursor:pointer;">닫기</div>
         `}
       </div>
     `;
 
-    modal.addEventListener('click', e => { if(e.target === modal) closeModal(); });
     document.body.appendChild(modal);
-    setTimeout(() => { const inp = modal.querySelector('input'); if(inp) inp.focus(); }, 100);
+
+    document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
+    const saveBtn = document.getElementById('modalSaveBtn');
+    if(saveBtn) saveBtn.addEventListener('click', () => { if(_modalSaveCallback) _modalSaveCallback(); closeModal(); });
+    modal.addEventListener('click', e => { if(e.target === modal) closeModal(); });
+
+    setTimeout(() => { const inp = modal.querySelector('input:not([type=checkbox])'); if(inp) inp.focus(); }, 100);
   }
 
   function closeModal() {
     const modal = document.getElementById('suhoModal');
     if(modal) modal.remove();
+    _modalSaveCallback = null;
   }
 
   // 초기화
