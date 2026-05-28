@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>수호령 — 프로토타입</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --green: #00ff88;
+  --green-dim: rgba(0,255,136,0.6);
+  --green-faint: rgba(0,255,136,0.12);
+  --red: #ff4444;
+  --yellow: #ffcc00;
+}
+
+body {
+  background: #050a07;
+  color: var(--green);
+  font-family: 'Noto Sans KR', sans-serif;
+  height: 100dvh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 배경 */
+.bg {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 30% 40%, rgba(0,30,15,0.5) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 70%, rgba(0,15,8,0.4) 0%, transparent 50%);
+  z-index: 0;
+}
+
+.scanlines {
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  z-index: 1; pointer-events: none;
+}
+
+/* API 키 입력 화면 */
+.setup-screen {
+  position: fixed; inset: 0;
+  z-index: 50;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 32px 24px;
+  background: #050a07;
+}
+
+.setup-screen.hidden { display: none; }
+
+.setup-logo { font-size: 36px; margin-bottom: 20px; }
+.setup-title { font-family: 'Share Tech Mono', monospace; font-size: 18px; color: var(--green); margin-bottom: 8px; letter-spacing: 0.1em; }
+.setup-desc { font-size: 12px; font-weight: 300; color: var(--green-dim); text-align: center; line-height: 1.7; margin-bottom: 32px; }
+
+.setup-input {
+  width: 100%;
+  background: var(--green-faint);
+  border: 1px solid var(--green-dim);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--green);
+  font-family: 'Share Tech Mono', monospace;
+  outline: none;
+  margin-bottom: 12px;
+  letter-spacing: 0.05em;
+}
+
+.setup-input::placeholder { color: rgba(0,255,136,0.3); }
+
+.setup-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--green);
+  color: #050a07;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Noto Sans KR', sans-serif;
+  cursor: pointer;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.setup-link {
+  font-size: 11px; color: var(--green-dim);
+  text-align: center; text-decoration: underline;
+  cursor: pointer;
+}
+
+/* HUD 화면 */
+.hud-screen {
+  position: fixed; inset: 0;
+  z-index: 10;
+}
+
+.hud-screen.hidden { display: none; }
+
+/* 신호 */
+.signal {
+  position: absolute; top: 24px; right: 20px;
+  width: 10px; height: 10px; border-radius: 50%;
+  transition: all 0.4s; opacity: 0;
+}
+
+.signal.green { background: var(--green); box-shadow: 0 0 12px var(--green); opacity: 1; }
+.signal.yellow { background: var(--yellow); box-shadow: 0 0 12px var(--yellow); opacity: 1; }
+.signal.red { background: var(--red); box-shadow: 0 0 12px var(--red); opacity: 1; }
+
+/* 모드 표시 */
+.mode-label {
+  position: absolute; top: 22px; left: 20px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px; color: rgba(0,255,136,0.3);
+  letter-spacing: 0.2em; opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.mode-label.visible { opacity: 1; }
+
+/* 자막 */
+.subtitle {
+  position: absolute; bottom: 200px; left: 20px; right: 20px;
+  font-size: 12px; font-weight: 300; color: var(--green-dim);
+  line-height: 1.6; letter-spacing: 0.02em;
+  opacity: 0; transition: opacity 0.3s;
+  min-height: 20px;
+}
+
+.subtitle.visible { opacity: 1; }
+
+/* 요약 */
+.summary {
+  position: absolute; bottom: 140px; left: 20px; right: 20px;
+  opacity: 0; transition: all 0.4s; transform: translateY(8px);
+}
+
+.summary.visible { opacity: 1; transform: translateY(0); }
+
+.summary-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px; color: var(--green-dim);
+  letter-spacing: 0.15em; margin-bottom: 6px;
+}
+
+.summary-text {
+  font-size: 12px; font-weight: 300; color: var(--green);
+  line-height: 1.8; border-left: 1px solid var(--green-faint);
+  padding-left: 12px;
+}
+
+/* 응답 제안 */
+.reply {
+  position: absolute; bottom: 80px; left: 20px; right: 20px;
+  opacity: 0; transition: all 0.4s 0.1s; transform: translateY(8px);
+}
+
+.reply.visible { opacity: 1; transform: translateY(0); }
+
+.reply-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px; color: var(--green-dim);
+  letter-spacing: 0.15em; margin-bottom: 6px;
+}
+
+.reply-text {
+  font-size: 12px; font-weight: 400; color: var(--green);
+  line-height: 1.6; padding: 8px 12px;
+  border: 1px solid var(--green-faint);
+  background: rgba(0,255,136,0.04);
+}
+
+/* 로딩 */
+.loading {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: var(--green-dim);
+  letter-spacing: 0.2em; opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.loading.visible { opacity: 1; }
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.blink { animation: blink 1.2s ease infinite; }
+
+/* 컨트롤 */
+.controls {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  z-index: 100;
+  background: rgba(5,10,7,0.95);
+  border-top: 1px solid var(--green-faint);
+  padding: 12px 16px 24px;
+}
+
+.mic-btn {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--green-faint);
+  border: 2px solid var(--green-dim);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; cursor: pointer;
+  margin: 0 auto 10px;
+  transition: all 0.2s;
+}
+
+.mic-btn.recording {
+  background: rgba(255,68,68,0.15);
+  border-color: var(--red);
+  box-shadow: 0 0 20px rgba(255,68,68,0.3);
+  animation: blink 1s ease infinite;
+}
+
+.mic-status {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px; color: rgba(0,255,136,0.4);
+  letter-spacing: 0.2em; text-align: center;
+  margin-bottom: 10px;
+}
+
+.btn-row {
+  display: flex; gap: 8px;
+}
+
+.ctrl-btn {
+  flex: 1; padding: 8px 4px;
+  background: var(--green-faint);
+  border: 1px solid rgba(0,255,136,0.2);
+  color: var(--green-dim);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 8px; letter-spacing: 0.05em;
+  text-align: center; cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ctrl-btn:active { background: rgba(0,255,136,0.15); border-color: var(--green); color: var(--green); }
+
+/* 경고 */
+.warning {
+  position: absolute; top: 50%; left: 20px; right: 20px;
+  transform: translateY(-50%);
+  font-size: 11px; color: var(--yellow);
+  text-align: center; opacity: 0; transition: opacity 0.3s;
+}
+
+.warning.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="bg"></div>
+<div class="scanlines"></div>
+
+<!-- API 키 설정 화면 -->
+<div class="setup-screen" id="setupScreen">
+  <div class="setup-logo">👁</div>
+  <div class="setup-title">SUHOLYEONG</div>
+  <div class="setup-desc">Gemini API 키를 입력하면<br>실시간 대화 분석이 시작돼</div>
+  <input class="setup-input" id="apiKeyInput" type="password" placeholder="AIza..." />
+  <div class="setup-btn" onclick="startApp()">시작하기</div>
+  <div class="setup-link" onclick="window.open('https://aistudio.google.com/apikey')">API 키 발급하러 가기 →</div>
+</div>
+
+<!-- HUD 화면 -->
+<div class="hud-screen hidden" id="hudScreen">
+
+  <div class="mode-label" id="modeLabel"></div>
+  <div class="signal" id="signal"></div>
+  <div class="loading blink" id="loading">ANALYZING ·</div>
+  <div class="warning" id="warning"></div>
+  <div class="subtitle" id="subtitle"></div>
+  <div class="summary" id="summary">
+    <div class="summary-label">SUMMARY ·</div>
+    <div class="summary-text" id="summaryText"></div>
+  </div>
+  <div class="reply" id="reply">
+    <div class="reply-label">REPLY ·</div>
+    <div class="reply-text" id="replyText"></div>
+  </div>
+
+  <div class="controls">
+    <div class="mic-btn" id="micBtn" onclick="toggleMic()">🎙️</div>
+    <div class="mic-status" id="micStatus">탭해서 녹음 시작</div>
+    <div class="btn-row">
+      <div class="ctrl-btn" onclick="analyzeNow()">지금 분석</div>
+      <div class="ctrl-btn" onclick="clearAll()">초기화</div>
+      <div class="ctrl-btn" onclick="showSetup()">API 키 변경</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let apiKey = '';
+  let recognition = null;
+  let isRecording = false;
+  let fullTranscript = '';
+  let analyzeTimer = null;
+
+  function startApp() {
+    const key = document.getElementById('apiKeyInput').value.trim();
+    if(!key || !key.startsWith('AIza')) {
+      alert('올바른 Gemini API 키를 입력해줘 (AIza로 시작)');
+      return;
+    }
+    apiKey = key;
+    localStorage.setItem('suholyeong_key', key);
+    document.getElementById('setupScreen').classList.add('hidden');
+    document.getElementById('hudScreen').classList.remove('hidden');
+    initSpeech();
+  }
+
+  function showSetup() {
+    document.getElementById('hudScreen').classList.add('hidden');
+    document.getElementById('setupScreen').classList.remove('hidden');
+  }
+
+  // 저장된 키 불러오기 (입력란에만 채워놓고 화면은 유지)
+  window.onload = () => {
+    try {
+      const saved = localStorage.getItem('suholyeong_key');
+      if(saved) document.getElementById('apiKeyInput').value = saved;
+    } catch(e) {}
+  };
+
+  function initSpeech() {
+    if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      document.getElementById('micStatus').textContent = '이 브라우저는 음성 인식을 지원하지 않아';
+      return;
+    }
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SR();
+    recognition.lang = 'ko-KR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (e) => {
+      let interim = '';
+      let final = '';
+
+      for(let i = e.resultIndex; i < e.results.length; i++) {
+        if(e.results[i].isFinal) {
+          final += e.results[i][0].transcript;
+        } else {
+          interim += e.results[i][0].transcript;
+        }
+      }
+
+      if(final) {
+        fullTranscript += final + ' ';
+        showSubtitle(fullTranscript.slice(-80));
+
+        // 신호 업데이트
+        setSignal('yellow');
+
+        // 3초 후 자동 분석
+        clearTimeout(analyzeTimer);
+        analyzeTimer = setTimeout(() => {
+          if(fullTranscript.trim().length > 10) analyzeWithGemini();
+        }, 3000);
+      } else if(interim) {
+        showSubtitle((fullTranscript + interim).slice(-80));
+      }
+    };
+
+    recognition.onerror = (e) => {
+      if(e.error !== 'no-speech') {
+        document.getElementById('micStatus').textContent = '오류: ' + e.error;
+        stopMic();
+      }
+    };
+
+    recognition.onend = () => {
+      if(isRecording) {
+        // 자동 재시작
+        try { recognition.start(); } catch(e) {}
+      }
+    };
+  }
+
+  function toggleMic() {
+    if(isRecording) stopMic();
+    else startMic();
+  }
+
+  function startMic() {
+    if(!recognition) return;
+    try {
+      recognition.start();
+      isRecording = true;
+      document.getElementById('micBtn').classList.add('recording');
+      document.getElementById('micBtn').textContent = '⏹️';
+      document.getElementById('micStatus').textContent = '녹음 중 · 말해봐';
+      setSignal('green');
+      document.getElementById('modeLabel').textContent = 'LISTENING ·';
+      document.getElementById('modeLabel').classList.add('visible');
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  function stopMic() {
+    if(!recognition) return;
+    recognition.stop();
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micBtn').textContent = '🎙️';
+    document.getElementById('micStatus').textContent = '탭해서 녹음 시작';
+    clearTimeout(analyzeTimer);
+  }
+
+  function showSubtitle(text) {
+    const el = document.getElementById('subtitle');
+    el.textContent = text;
+    el.classList.add('visible');
+  }
+
+  function setSignal(color) {
+    const el = document.getElementById('signal');
+    el.className = 'signal ' + color;
+  }
+
+  function showLoading(show) {
+    document.getElementById('loading').classList.toggle('visible', show);
+  }
+
+  function analyzeNow() {
+    if(fullTranscript.trim().length < 5) {
+      showWarning('말한 내용이 없어. 먼저 녹음해봐.');
+      return;
+    }
+    analyzeWithGemini();
+  }
+
+  async function analyzeWithGemini() {
+    showLoading(true);
+    setSignal('yellow');
+
+    // 이전 결과 숨기기
+    document.getElementById('summary').classList.remove('visible');
+    document.getElementById('reply').classList.remove('visible');
+
+    const prompt = `다음은 상대방이 한 말이야. 아래 형식으로만 답해줘. 다른 말은 절대 하지 마.
+
+상대방 말: "${fullTranscript.trim()}"
+
+형식:
+[신호] 초록/노랑/빨강 중 하나 (초록=괜찮음, 노랑=주의필요, 빨강=조심)
+[요약] 핵심 내용 1~3줄
+[대답] 이렇게 대답하면 좋을 것 같아 (1~2문장)
+[맥락] 한 줄 (상대 감정이나 상황)`;
+
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 300 }
+        })
+      });
+
+      const data = await res.json();
+
+      if(data.error) {
+        showWarning('API 오류: ' + data.error.message);
+        showLoading(false);
+        return;
+      }
+
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      parseAndDisplay(text);
+
+    } catch(e) {
+      showWarning('연결 오류. 인터넷 확인해봐.');
+      console.error(e);
+    }
+
+    showLoading(false);
+  }
+
+  function parseAndDisplay(text) {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+    let signal = 'green';
+    let summary = '';
+    let reply = '';
+
+    lines.forEach(line => {
+      if(line.startsWith('[신호]')) {
+        const val = line.replace('[신호]', '').trim();
+        if(val.includes('빨강')) signal = 'red';
+        else if(val.includes('노랑')) signal = 'yellow';
+        else signal = 'green';
+      } else if(line.startsWith('[요약]')) {
+        summary = line.replace('[요약]', '').trim();
+      } else if(line.startsWith('[대답]')) {
+        reply = line.replace('[대답]', '').trim();
+      } else if(line.startsWith('[맥락]')) {
+        const ctx = line.replace('[맥락]', '').trim();
+        if(summary) summary += '\n' + ctx;
+      }
+    });
+
+    setSignal(signal);
+
+    if(summary) {
+      document.getElementById('summaryText').textContent = summary;
+      document.getElementById('summary').classList.add('visible');
+    }
+
+    if(reply) {
+      document.getElementById('replyText').textContent = reply;
+      document.getElementById('reply').classList.add('visible');
+    }
+  }
+
+  function showWarning(msg) {
+    const el = document.getElementById('warning');
+    el.textContent = '⚠ ' + msg;
+    el.classList.add('visible');
+    setTimeout(() => el.classList.remove('visible'), 3000);
+  }
+
+  function clearAll() {
+    fullTranscript = '';
+    clearTimeout(analyzeTimer);
+    document.getElementById('subtitle').classList.remove('visible');
+    document.getElementById('summary').classList.remove('visible');
+    document.getElementById('reply').classList.remove('visible');
+    document.getElementById('warning').classList.remove('visible');
+    document.getElementById('signal').className = 'signal';
+    document.getElementById('modeLabel').classList.remove('visible');
+    document.getElementById('subtitle').textContent = '';
+  }
+</script>
+</body>
+</html>
