@@ -115,10 +115,11 @@ body {
 
 /* 자막 */
 .subtitle {
-  position: absolute; bottom: 300px; left: 20px; right: 20px;
-  font-size: 12px; font-weight: 300; color: var(--green-dim);
-  line-height: 1.6; opacity: 0; transition: opacity 0.3s;
-  max-height: 48px; overflow: hidden;
+  position: absolute; top: 60px; left: 20px; right: 80px;
+  font-size: 11px; font-weight: 300; color: var(--green-dim);
+  line-height: 1.5; opacity: 0; transition: opacity 0.3s;
+  max-height: 36px; overflow: hidden;
+  white-space: nowrap; text-overflow: ellipsis;
 }
 .subtitle.visible { opacity: 1; }
 
@@ -318,9 +319,6 @@ body {
 
   <div class="tts-indicator blink" id="ttsIndicator">🔊 READING ·</div>
 
-  <!-- 입력 모드 표시 -->
-  <div style="position:absolute;bottom:195px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:8px;color:rgba(0,255,136,0.4);letter-spacing:0.15em;white-space:nowrap;" id="inputModeLabel">🎙️ AUTO · 위로 스와이프하여 전환</div>
-
   <div class="controls">
     <!-- 텍스트 입력창 -->
     <div id="textInputWrap" style="display:none;margin-bottom:10px;">
@@ -336,8 +334,8 @@ body {
     <div class="btn-row">
       <div class="ctrl-btn" onclick="analyzeNow()">지금 분석</div>
       <div class="ctrl-btn" onclick="clearAll()">초기화</div>
+      <div class="ctrl-btn" id="inputModeBtn" onclick="cycleInputMode()">🎙️ AUTO</div>
       <div class="ctrl-btn" onclick="openSettings()">설정</div>
-      <div class="ctrl-btn" onclick="window.location.href='index.html'">홈</div>
     </div>
   </div>
 
@@ -389,26 +387,19 @@ body {
   // 입력 모드: 'auto' | 'manual' | 'text'
   let inputMode = 'auto';
   const inputModes = ['auto', 'manual', 'text'];
-  const inputModeLabels = {
-    auto: '🎙️ AUTO · 자동 감지 중',
-    manual: '🎙️ MANUAL · 탭해서 녹음',
-    text: '⌨️ TEXT · 직접 입력'
-  };
-  const inputModeHints = {
-    auto: '🎙️ AUTO · 위로 스와이프하여 전환',
-    manual: '🎙️ MANUAL · 위로 스와이프하여 전환',
-    text: '⌨️ TEXT · 위로 스와이프하여 전환'
-  };
 
   function setInputMode(mode) {
     inputMode = mode;
-    const label = document.getElementById('inputModeLabel');
     const status = document.getElementById('micStatus');
     const micBtn = document.getElementById('micBtn');
     const textWrap = document.getElementById('textInputWrap');
+    const modeBtn = document.getElementById('inputModeBtn');
 
-    label.textContent = inputModeHints[mode];
-    status.textContent = inputModeLabels[mode];
+    const modeLabels = { auto: '🎙️ AUTO', manual: '🎙️ MANUAL', text: '⌨️ TEXT' };
+    const statusLabels = { auto: 'AUTO · 자동 감지 중', manual: 'MANUAL · 탭해서 녹음', text: 'TEXT · 직접 입력' };
+
+    if(modeBtn) modeBtn.textContent = modeLabels[mode];
+    if(status) status.textContent = statusLabels[mode];
 
     if(mode === 'text') {
       textWrap.style.display = 'block';
@@ -417,11 +408,8 @@ body {
     } else {
       textWrap.style.display = 'none';
       micBtn.style.display = 'flex';
-      if(mode === 'auto') {
-        startMic();
-      } else {
-        if(isRecording) stopMic();
-      }
+      if(mode === 'auto') startMic();
+      else if(isRecording) stopMic();
     }
   }
 
@@ -429,17 +417,8 @@ body {
     const idx = inputModes.indexOf(inputMode);
     const next = inputModes[(idx + 1) % inputModes.length];
     setInputMode(next);
-    // 진동 피드백
     if(navigator.vibrate) navigator.vibrate(50);
   }
-
-  // 프레임 스와이프 감지 (위로 스와이프 → 모드 전환)
-  let swipeStartY = 0;
-  document.addEventListener('touchstart', e => { swipeStartY = e.touches[0].clientY; }, { passive: true });
-  document.addEventListener('touchend', e => {
-    const diff = swipeStartY - e.changedTouches[0].clientY;
-    if(diff > 60) cycleInputMode(); // 위로 스와이프
-  });
 
   // 텍스트 입력 제출
   function submitText() {
@@ -448,7 +427,7 @@ body {
     if(!text) return;
     fullTranscript += text + ' ';
     if(displayMode) {
-      document.getElementById('subtitle').textContent = fullTranscript.slice(-80);
+      document.getElementById('subtitle').textContent = text.slice(0, 30);
       document.getElementById('subtitle').classList.add('visible');
     }
     input.value = '';
@@ -456,7 +435,6 @@ body {
     analyzeNow();
   }
 
-  // 엔터키로 제출
   document.addEventListener('keydown', e => {
     if(e.key === 'Enter' && inputMode === 'text') submitText();
   });
@@ -539,6 +517,7 @@ body {
   }
 
   function toggleMic() {
+    if(navigator.vibrate) navigator.vibrate(30); // 진동 활성화
     if(isRecording) stopMic();
     else startMic();
   }
@@ -590,14 +569,29 @@ body {
       document.getElementById('reply').classList.remove('visible');
     }
 
-    const prompt = `다음은 상대방이 한 말이야. 반드시 한국어로만 답해줘. 아래 형식으로만 답해줘. 다른 말은 절대 하지 마.
+    // 업무/일상 자동 감지
+    const workKeywords = ['보고', '회의', '마감', '제출', '확인', '검토', '승인', '일정', '프로젝트', '업무', '팀', '팀장', '대리', '과장', '부장', '사장', '클라이언트', '고객', '계약', '예산', '비용', '목표', 'KPI', 'OKR', 'MVP', '덱', '발표'];
+    const isWork = workKeywords.some(w => fullTranscript.includes(w));
+
+    const prompt = isWork ?
+`다음은 상대방이 한 말이야. 반드시 한국어로만 답해줘. 아래 형식으로만 답해줘. 다른 말은 절대 하지 마.
 
 상대방 말: "${fullTranscript.trim()}"
 
 형식:
 [신호] 초록/노랑/빨강 중 하나
 [요약] 핵심 내용 1~2줄. 모든 영어단어 전문용어 업무용어를 한 단어 쉬운 한국어로 교체해줘. 절대 설명하지 마. 그냥 단어만 바꿔. 예: KPI→성과지표, OKR→목표관리, 마이그레이션→시스템이전, 스테이크홀더→관계자, 애자일→유연하게, MVP→최소버전, 덱→발표자료, 레거시→구식, 싱크→공유, 얼라인→방향맞추기, 리소스→인력, 드래프트→초안, 컨펌→확인, 온보딩→적응, ROI→수익률
-[대답] 이렇게 대답하면 좋을 것 같아 1문장. 한국어만.
+[대답] 업무 상황에 맞는 응답 1문장. 필요하면 확인 질문 포함. 예: "네 확인하겠습니다. 혹시 마감이 언제까지인가요?" 한국어만.
+[맥락] 상대 감정이나 상황 한 줄. 한국어만.`
+:
+`다음은 상대방이 한 말이야. 반드시 한국어로만 답해줘. 아래 형식으로만 답해줘. 다른 말은 절대 하지 마.
+
+상대방 말: "${fullTranscript.trim()}"
+
+형식:
+[신호] 초록/노랑/빨강 중 하나
+[요약] 핵심 내용 1~2줄. 쉬운 한국어로.
+[대답] 자연스러운 일상 대화 응답 1문장. 되묻기 없이 자연스럽게. 한국어만.
 [맥락] 상대 감정이나 상황 한 줄. 한국어만.`;
 
 
