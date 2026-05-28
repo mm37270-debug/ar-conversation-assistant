@@ -310,11 +310,6 @@ body {
       <div class="summary-text" id="summaryText"></div>
     </div>
 
-    <div class="summary" id="termsSection" style="display:none;">
-      <div class="summary-label">📖 TERMS ·</div>
-      <div class="summary-text" id="termsText" style="font-size:11px;line-height:1.9;"></div>
-    </div>
-
     <div class="reply" id="reply">
       <div class="reply-label">REPLY ·</div>
       <div class="reply-text" id="replyText"></div>
@@ -434,6 +429,8 @@ body {
     const idx = inputModes.indexOf(inputMode);
     const next = inputModes[(idx + 1) % inputModes.length];
     setInputMode(next);
+    // 진동 피드백
+    if(navigator.vibrate) navigator.vibrate(50);
   }
 
   // 프레임 스와이프 감지 (위로 스와이프 → 모드 전환)
@@ -599,11 +596,10 @@ body {
 
 형식:
 [신호] 초록/노랑/빨강 중 하나
-[요약] 핵심 내용 1~2줄. 모든 전문용어, 영어, 업무용어, 어려운 한자어는 전부 쉬운 한국어로 바꿔줘.
-예시: KPI→성과지표, 마이그레이션→시스템이전, 스테이크홀더→관계자, 애자일→빠르고유연하게, MVP→최소버전, 덱→발표자료, 온보딩→적응교육, 레거시→구식시스템, 싱크→공유, 얼라인→방향맞추기, ROI→투자대비수익, 컨펌→확인승인, 리소스→인력자원, 산출물→결과물, 준거→기준, 협의→상의, 일정→날짜계획, 유관부서→관련부서, 검토→살펴보기, 공람→함께보기
-[대답] 이렇게 대답하면 좋을 것 같아 1문장. 한국어만, 영어 절대 금지.
-[맥락] 상대 감정이나 상황 한 줄. 한국어만.
-[용어] 원래 말에서 어려운 단어가 있으면 각 줄에 "원래단어=쉬운뜻" 형식으로 모두 나열. 없으면 이 항목 생략.`;
+[요약] 핵심 내용 1~2줄. 모든 영어단어 전문용어 업무용어를 한 단어 쉬운 한국어로 교체해줘. 절대 설명하지 마. 그냥 단어만 바꿔. 예: KPI→성과지표, OKR→목표관리, 마이그레이션→시스템이전, 스테이크홀더→관계자, 애자일→유연하게, MVP→최소버전, 덱→발표자료, 레거시→구식, 싱크→공유, 얼라인→방향맞추기, 리소스→인력, 드래프트→초안, 컨펌→확인, 온보딩→적응, ROI→수익률
+[대답] 이렇게 대답하면 좋을 것 같아 1문장. 한국어만.
+[맥락] 상대 감정이나 상황 한 줄. 한국어만.`;
+
 
     let result = null;
 
