@@ -692,34 +692,34 @@ body.dark .close-btn { background: #141414; color: #777777; }
     <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:10px;">
       <div class="setting-left">
         <div class="setting-icon" style="background:#e8f5e9;">🤖</div>
-        <div><div class="setting-title">기본 AI</div></div>
+        <div><div class="setting-title">기본 AI (비서 모드)</div></div>
       </div>
       <div class="ai-chips" style="padding:0;border:none;">
-        <div class="ai-chip selected" onclick="selectAI(this)">Gemini</div>
-        <div class="ai-chip" onclick="selectAI(this)">Claude</div>
-        <div class="ai-chip" onclick="selectAI(this)">ChatGPT</div>
+        <div class="ai-chip selected" id="aiChipGemini" onclick="selectAIChip('gemini')">Gemini</div>
+        <div class="ai-chip" id="aiChipClaude" onclick="selectAIChip('claude')">Claude</div>
+        <div class="ai-chip" id="aiChipChatgpt" onclick="selectAIChip('chatgpt')">ChatGPT</div>
       </div>
     </div>
-    <div class="setting-row">
+    <div class="setting-row" onclick="openKeyModal('claude')">
       <div class="setting-left"><div class="setting-icon" style="background:#fce4ec;">🔑</div><div><div class="setting-title">Claude API 키</div><div class="setting-desc">AI 비서 모드에서 선택 가능</div></div></div>
-      <div class="setting-right"><div class="setting-value">미입력</div><div class="setting-arrow">›</div></div>
+      <div class="setting-right"><div class="setting-value" id="claudeStatus">미입력</div><div class="setting-arrow">›</div></div>
     </div>
-    <div class="setting-row">
+    <div class="setting-row" onclick="openKeyModal('chatgpt')">
       <div class="setting-left"><div class="setting-icon" style="background:#fce4ec;">🔑</div><div><div class="setting-title">ChatGPT API 키</div><div class="setting-desc">AI 비서 모드에서 선택 가능</div></div></div>
-      <div class="setting-right"><div class="setting-value">미입력</div><div class="setting-arrow">›</div></div>
+      <div class="setting-right"><div class="setting-value" id="chatgptStatus">미입력</div><div class="setting-arrow">›</div></div>
     </div>
 
     <div class="divider"></div>
     <div class="section-label">대화 분석 AI (자동 전환)</div>
-    <div class="setting-row">
+    <div class="setting-row" onclick="openKeyModal('gemini')">
       <div class="setting-left"><div class="setting-icon" style="background:#e8f5e9;">1️⃣</div><div><div class="setting-title">Gemini API 키</div><div class="setting-desc">기본 AI · 한도 초과 시 자동 전환</div></div></div>
       <div class="setting-right"><div class="setting-value" id="geminiStatus">미입력</div><div class="setting-arrow">›</div></div>
     </div>
-    <div class="setting-row">
+    <div class="setting-row" onclick="openKeyModal('openrouter')">
       <div class="setting-left"><div class="setting-icon" style="background:#e8f5e9;">2️⃣</div><div><div class="setting-title">OpenRouter API 키</div><div class="setting-desc">Gemini 한도 초과 시 자동 전환</div></div></div>
       <div class="setting-right"><div class="setting-value" id="orStatus">미입력</div><div class="setting-arrow">›</div></div>
     </div>
-    <div class="setting-row">
+    <div class="setting-row" onclick="openKeyModal('groq')">
       <div class="setting-left"><div class="setting-icon" style="background:#e8f5e9;">3️⃣</div><div><div class="setting-title">Groq API 키</div><div class="setting-desc">OpenRouter 한도 초과 시 자동 전환 · 매일 리셋</div></div></div>
       <div class="setting-right"><div class="setting-value" id="groqStatus">미입력</div><div class="setting-arrow">›</div></div>
     </div>
@@ -728,26 +728,26 @@ body.dark .close-btn { background: #141414; color: #777777; }
     <div class="section-label">모드 설정</div>
     <div class="setting-row">
       <div class="setting-left"><div class="setting-icon" style="background:#e3f2fd;">💼</div><div><div class="setting-title">업무 응답 제안</div><div class="setting-desc">업무 대화 중 자동 켜짐</div></div></div>
-      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      <div class="toggle on" id="toggleWork" onclick="toggleSetting('work')"></div>
     </div>
     <div class="setting-row">
       <div class="setting-left"><div class="setting-icon" style="background:#f3e5f5;">😄</div><div><div class="setting-title">장난/빈정거림 감지</div><div class="setting-desc">일상 대화에서 톤 분석</div></div></div>
-      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      <div class="toggle on" id="toggleJoke" onclick="toggleSetting('joke')"></div>
     </div>
-    <div class="setting-row">
+    <div class="setting-row" onclick="openKeywordModal()">
       <div class="setting-left"><div class="setting-icon" style="background:#fff8e1;">📝</div><div><div class="setting-title">업무 커스텀 단어</div><div class="setting-desc">우리 회사 전용 용어 추가</div></div></div>
-      <div class="setting-right"><div class="setting-value">3개</div><div class="setting-arrow">›</div></div>
+      <div class="setting-right"><div class="setting-value" id="customWordCount">0개</div><div class="setting-arrow">›</div></div>
     </div>
 
     <div class="divider"></div>
     <div class="section-label">저장 설정</div>
     <div class="setting-row">
       <div class="setting-left"><div class="setting-icon" style="background:#e3f2fd;">💾</div><div><div class="setting-title">대화 자동 저장</div><div class="setting-desc">할일 목록 자동 생성</div></div></div>
-      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      <div class="toggle on" id="toggleAutoSave" onclick="toggleSetting('autoSave')"></div>
     </div>
-    <div class="setting-row">
-      <div class="setting-left"><div class="setting-icon" style="background:#e3f2fd;">📅</div><div><div class="setting-title">보관 기간</div></div></div>
-      <div class="setting-right"><div class="setting-value">30일</div><div class="setting-arrow">›</div></div>
+    <div class="setting-row" onclick="openRetentionModal()">
+      <div class="setting-left"><div class="setting-icon" style="background:#e3f2fd;">📅</div><div><div class="setting-title">보관 기간</div><div class="setting-desc">오래된 대화 자동 삭제</div></div></div>
+      <div class="setting-right"><div class="setting-value" id="retentionValue">30일</div><div class="setting-arrow">›</div></div>
     </div>
     <div class="setting-row">
       <div class="setting-left"><div class="setting-icon" style="background:#e3f2fd;">☁️</div><div><div class="setting-title">저장 위치</div><div class="setting-desc">구글 드라이브 연동</div></div></div>
@@ -756,32 +756,27 @@ body.dark .close-btn { background: #141414; color: #777777; }
 
     <div class="divider"></div>
     <div class="section-label">화자 관리</div>
-    <div class="speaker-row">
-      <div class="speaker-avatar">👔</div>
-      <div style="flex:1;"><div class="speaker-name">김팀장</div><div class="speaker-meta">대화 12회 · 중요 ⭐</div></div>
-      <div class="speaker-badge recognized">인식됨</div>
-    </div>
-    <div class="speaker-row">
-      <div class="speaker-avatar">❓</div>
-      <div style="flex:1;"><div class="speaker-name" style="color:#aaaaaa">미지정 1</div><div class="speaker-meta">대화 1회 · 어제</div></div>
-      <div class="speaker-badge unset">이름 지정</div>
+    <div id="speakerList"></div>
+    <div class="setting-row" onclick="openSpeakerModal()">
+      <div class="setting-left"><div class="setting-icon" style="background:#fff8e1;">➕</div><div><div class="setting-title">화자 추가</div><div class="setting-desc">새 화자 이름 등록</div></div></div>
+      <div class="setting-arrow">›</div>
     </div>
 
     <div class="divider"></div>
     <div class="section-label">프라이버시</div>
-    <div class="setting-row">
+    <div class="setting-row" onclick="openFilterModal()">
       <div class="setting-left"><div class="setting-icon" style="background:#fce4ec;">🔒</div><div><div class="setting-title">민감 키워드 필터</div><div class="setting-desc">저장에서 자동 제외</div></div></div>
-      <div class="setting-right"><div class="setting-value">0개</div><div class="setting-arrow">›</div></div>
+      <div class="setting-right"><div class="setting-value" id="filterCount">0개</div><div class="setting-arrow">›</div></div>
     </div>
     <div class="setting-row">
       <div class="setting-left"><div class="setting-icon" style="background:#fce4ec;">📱</div><div><div class="setting-title">안경 연결</div><div class="setting-desc">Rokid Glasses 페어링</div></div></div>
-      <div class="setting-right"><div class="setting-value" style="color:#00c471">연결됨</div><div class="setting-arrow">›</div></div>
+      <div class="setting-right"><div class="setting-value" style="color:#aaaaaa">미연결</div><div class="setting-arrow">›</div></div>
     </div>
 
     <div class="divider"></div>
     <div class="section-label">데이터</div>
-    <div class="setting-row"><div class="danger-title">대화 기록 전체 삭제</div><div class="setting-arrow">›</div></div>
-    <div class="setting-row"><div class="danger-title">계정 연결 해제</div><div class="setting-arrow">›</div></div>
+    <div class="setting-row" onclick="clearAllData()"><div class="danger-title">대화 기록 전체 삭제</div><div class="setting-arrow">›</div></div>
+    <div class="setting-row" onclick="resetOnboarding()"><div class="danger-title">온보딩 다시 보기</div><div class="setting-arrow">›</div></div>
 
     <div class="version-text">SUHO v0.1.0 · 박영주 제작</div>
   </div>
@@ -868,6 +863,7 @@ body.dark .close-btn { background: #141414; color: #777777; }
     const t = item.querySelector('.todo-t');
     c.classList.toggle('done');
     t.classList.toggle('done');
+    saveTodos();
   }
 
   function toggleLgCheck(item) {
@@ -878,7 +874,31 @@ body.dark .close-btn { background: #141414; color: #777777; }
     c.classList.remove('urgent');
     t.classList.toggle('done');
     if(d) { d.classList.toggle('done-c'); if(d.classList.contains('done-c')) d.textContent = '완료'; }
+    saveTodos();
   }
+
+  function saveTodos() {
+    const todos = [];
+    document.querySelectorAll('.todo-item-home, .todo-row-full').forEach((item, i) => {
+      const isDone = item.querySelector('.check-sm, .check-lg')?.classList.contains('done');
+      todos.push({ idx: i, done: isDone });
+    });
+    localStorage.setItem('suho_todos', JSON.stringify(todos));
+  }
+
+  function loadTodos() {
+    const saved = JSON.parse(localStorage.getItem('suho_todos') || '[]');
+    saved.forEach(t => {
+      const items = document.querySelectorAll('.todo-item-home, .todo-row-full');
+      if(!items[t.idx] || !t.done) return;
+      const c = items[t.idx].querySelector('.check-sm, .check-lg');
+      const tx = items[t.idx].querySelector('.todo-t, .todo-full-text');
+      if(c) c.classList.add('done');
+      if(tx) tx.classList.add('done');
+    });
+  }
+
+  loadTodos();
 
   function setFilter(el) {
     el.closest('.filter-bar').querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
@@ -917,15 +937,291 @@ body.dark .close-btn { background: #141414; color: #777777; }
 
   // API 키 상태 표시
   function updateKeyStatus() {
-    const g = localStorage.getItem('suho_gemini');
-    const o = localStorage.getItem('suho_openrouter');
-    const gr = localStorage.getItem('suho_groq');
-    if(document.getElementById('geminiStatus')) {
-      document.getElementById('geminiStatus').textContent = g ? '입력됨 ✓' : '미입력';
-      document.getElementById('orStatus').textContent = o ? '입력됨 ✓' : '미입력';
-      document.getElementById('groqStatus').textContent = gr ? '입력됨 ✓' : '미입력';
+    const keys = { gemini: 'suho_gemini', openrouter: 'suho_openrouter', groq: 'suho_groq', claude: 'suho_claude', chatgpt: 'suho_chatgpt' };
+    const ids = { gemini: 'geminiStatus', openrouter: 'orStatus', groq: 'groqStatus', claude: 'claudeStatus', chatgpt: 'chatgptStatus' };
+    Object.keys(keys).forEach(k => {
+      const el = document.getElementById(ids[k]);
+      if(!el) return;
+      const val = localStorage.getItem(keys[k]);
+      el.textContent = val ? '입력됨 ✓' : '미입력';
+      el.style.color = val ? '#00c471' : '#aaaaaa';
+    });
+  }
+
+  // API 키 입력 모달
+  function openKeyModal(type) {
+    const labels = { gemini: 'Gemini API 키', openrouter: 'OpenRouter API 키', groq: 'Groq API 키', claude: 'Claude API 키', chatgpt: 'ChatGPT API 키' };
+    const placeholders = { gemini: 'AIza...', openrouter: 'sk-or-...', groq: 'gsk_...', claude: 'sk-ant-...', chatgpt: 'sk-...' };
+    const links = { gemini: 'https://aistudio.google.com/apikey', openrouter: 'https://openrouter.ai/keys', groq: 'https://console.groq.com/keys', claude: 'https://console.anthropic.com/', chatgpt: 'https://platform.openai.com/api-keys' };
+    const saved = localStorage.getItem('suho_' + type) || '';
+    showModal(`
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px;">${labels[type]}</div>
+      <div style="font-size:12px;color:#aaaaaa;margin-bottom:16px;">입력 후 저장하면 자동으로 사용돼</div>
+      <input id="modalInput" type="password" placeholder="${placeholders[type]}"
+        style="width:100%;padding:12px 14px;border:1px solid #ebebeb;border-radius:10px;font-size:13px;outline:none;margin-bottom:8px;" value="${saved}" />
+      <a onclick="window.open('${links[type]}')" style="font-size:11px;color:#aaaaaa;text-decoration:underline;cursor:pointer;display:block;margin-bottom:20px;">발급하러 가기 →</a>
+      ${saved ? `<div onclick="deleteKey('${type}')" style="text-align:center;font-size:12px;color:#e53935;margin-bottom:12px;cursor:pointer;">삭제하기</div>` : ''}
+    `, () => {
+      const val = document.getElementById('modalInput').value.trim();
+      if(val) localStorage.setItem('suho_' + type, val);
+      updateKeyStatus();
+    });
+  }
+
+  function deleteKey(type) {
+    localStorage.removeItem('suho_' + type);
+    closeModal();
+    updateKeyStatus();
+  }
+
+  // AI 칩 선택
+  function selectAIChip(ai) {
+    ['gemini','claude','chatgpt'].forEach(a => {
+      document.getElementById('aiChip' + a.charAt(0).toUpperCase() + a.slice(1)).classList.toggle('selected', a === ai);
+    });
+    localStorage.setItem('suho_defaultAI', ai);
+  }
+
+  // 토글 설정
+  function toggleSetting(key) {
+    const el = document.getElementById('toggle' + key.charAt(0).toUpperCase() + key.slice(1));
+    const isOn = el.classList.toggle('on');
+    localStorage.setItem('suho_toggle_' + key, isOn ? '1' : '0');
+  }
+
+  function loadToggles() {
+    ['work', 'joke', 'autoSave'].forEach(key => {
+      const saved = localStorage.getItem('suho_toggle_' + key);
+      const el = document.getElementById('toggle' + key.charAt(0).toUpperCase() + key.slice(1));
+      if(!el) return;
+      if(saved === '0') el.classList.remove('on');
+      else el.classList.add('on');
+    });
+  }
+
+  // 보관 기간
+  function openRetentionModal() {
+    const current = localStorage.getItem('suho_retention') || '30일';
+    showModal(`
+      <div style="font-size:15px;font-weight:600;margin-bottom:16px;">보관 기간</div>
+      ${['7일','14일','30일','90일','무제한'].map(d => `
+        <div onclick="setRetention('${d}')" style="padding:14px 16px;border:1px solid ${current===d?'#111111':'#ebebeb'};border-radius:10px;margin-bottom:8px;font-size:14px;font-weight:${current===d?'600':'400'};cursor:pointer;background:${current===d?'#111111':'transparent'};color:${current===d?'#ffffff':'#111111'};">${d}</div>
+      `).join('')}
+    `, null, true);
+  }
+
+  function setRetention(val) {
+    localStorage.setItem('suho_retention', val);
+    document.getElementById('retentionValue').textContent = val;
+    closeModal();
+  }
+
+  // 커스텀 단어
+  function openKeywordModal() {
+    const words = JSON.parse(localStorage.getItem('suho_keywords') || '[]');
+    showModal(`
+      <div style="font-size:15px;font-weight:600;margin-bottom:16px;">업무 커스텀 단어</div>
+      <div id="wordList" style="margin-bottom:12px;">
+        ${words.map((w,i) => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #ebebeb;">
+            <span style="font-size:13px;">${w}</span>
+            <span onclick="removeWord(${i})" style="color:#e53935;cursor:pointer;font-size:18px;">×</span>
+          </div>
+        `).join('') || '<div style="font-size:13px;color:#aaaaaa;padding:10px 0;">등록된 단어가 없어</div>'}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input id="wordInput" placeholder="단어 입력" style="flex:1;padding:10px 12px;border:1px solid #ebebeb;border-radius:8px;font-size:13px;outline:none;" />
+        <div onclick="addWord()" style="padding:10px 16px;background:#111111;color:#ffffff;border-radius:8px;font-size:13px;cursor:pointer;">추가</div>
+      </div>
+    `, null, true);
+  }
+
+  function addWord() {
+    const input = document.getElementById('wordInput');
+    const val = input.value.trim();
+    if(!val) return;
+    const words = JSON.parse(localStorage.getItem('suho_keywords') || '[]');
+    words.push(val);
+    localStorage.setItem('suho_keywords', JSON.stringify(words));
+    document.getElementById('customWordCount').textContent = words.length + '개';
+    openKeywordModal();
+  }
+
+  function removeWord(idx) {
+    const words = JSON.parse(localStorage.getItem('suho_keywords') || '[]');
+    words.splice(idx, 1);
+    localStorage.setItem('suho_keywords', JSON.stringify(words));
+    document.getElementById('customWordCount').textContent = words.length + '개';
+    openKeywordModal();
+  }
+
+  // 화자 관리
+  function renderSpeakers() {
+    const speakers = JSON.parse(localStorage.getItem('suho_speakers') || '[]');
+    const list = document.getElementById('speakerList');
+    if(!list) return;
+    list.innerHTML = speakers.map((s, i) => `
+      <div class="speaker-row">
+        <div class="speaker-avatar">${s.important ? '⭐' : '👤'}</div>
+        <div style="flex:1;">
+          <div class="speaker-name">${s.name}</div>
+          <div class="speaker-meta">${s.important ? '중요' : '일반'}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div onclick="toggleSpeakerImportant(${i})" style="font-size:11px;color:${s.important?'#f5a623':'#aaaaaa'};cursor:pointer;">⭐</div>
+          <div onclick="removeSpeaker(${i})" style="font-size:16px;color:#e53935;cursor:pointer;">×</div>
+        </div>
+      </div>
+    `).join('') || '';
+  }
+
+  function openSpeakerModal() {
+    showModal(`
+      <div style="font-size:15px;font-weight:600;margin-bottom:16px;">화자 추가</div>
+      <input id="speakerInput" placeholder="이름 입력 (예: 김팀장)" style="width:100%;padding:12px 14px;border:1px solid #ebebeb;border-radius:10px;font-size:13px;outline:none;margin-bottom:12px;" />
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:4px;cursor:pointer;">
+        <input type="checkbox" id="speakerImportant" /> 중요한 사람으로 표시
+      </label>
+    `, () => {
+      const name = document.getElementById('speakerInput').value.trim();
+      const important = document.getElementById('speakerImportant').checked;
+      if(!name) return;
+      const speakers = JSON.parse(localStorage.getItem('suho_speakers') || '[]');
+      speakers.push({ name, important });
+      localStorage.setItem('suho_speakers', JSON.stringify(speakers));
+      renderSpeakers();
+    });
+  }
+
+  function toggleSpeakerImportant(idx) {
+    const speakers = JSON.parse(localStorage.getItem('suho_speakers') || '[]');
+    speakers[idx].important = !speakers[idx].important;
+    localStorage.setItem('suho_speakers', JSON.stringify(speakers));
+    renderSpeakers();
+  }
+
+  function removeSpeaker(idx) {
+    const speakers = JSON.parse(localStorage.getItem('suho_speakers') || '[]');
+    speakers.splice(idx, 1);
+    localStorage.setItem('suho_speakers', JSON.stringify(speakers));
+    renderSpeakers();
+  }
+
+  // 민감 키워드 필터
+  function openFilterModal() {
+    const filters = JSON.parse(localStorage.getItem('suho_filters') || '[]');
+    showModal(`
+      <div style="font-size:15px;font-weight:600;margin-bottom:16px;">민감 키워드 필터</div>
+      <div style="font-size:12px;color:#aaaaaa;margin-bottom:12px;">이 단어가 포함된 대화는 저장에서 제외돼</div>
+      <div id="filterList" style="margin-bottom:12px;">
+        ${filters.map((w,i) => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #ebebeb;">
+            <span style="font-size:13px;">${w}</span>
+            <span onclick="removeFilter(${i})" style="color:#e53935;cursor:pointer;font-size:18px;">×</span>
+          </div>
+        `).join('') || '<div style="font-size:13px;color:#aaaaaa;padding:10px 0;">등록된 키워드가 없어</div>'}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input id="filterInput" placeholder="키워드 입력" style="flex:1;padding:10px 12px;border:1px solid #ebebeb;border-radius:8px;font-size:13px;outline:none;" />
+        <div onclick="addFilter()" style="padding:10px 16px;background:#111111;color:#ffffff;border-radius:8px;font-size:13px;cursor:pointer;">추가</div>
+      </div>
+    `, null, true);
+  }
+
+  function addFilter() {
+    const input = document.getElementById('filterInput');
+    const val = input.value.trim();
+    if(!val) return;
+    const filters = JSON.parse(localStorage.getItem('suho_filters') || '[]');
+    filters.push(val);
+    localStorage.setItem('suho_filters', JSON.stringify(filters));
+    document.getElementById('filterCount').textContent = filters.length + '개';
+    openFilterModal();
+  }
+
+  function removeFilter(idx) {
+    const filters = JSON.parse(localStorage.getItem('suho_filters') || '[]');
+    filters.splice(idx, 1);
+    localStorage.setItem('suho_filters', JSON.stringify(filters));
+    document.getElementById('filterCount').textContent = filters.length + '개';
+    openFilterModal();
+  }
+
+  // 데이터 삭제
+  function clearAllData() {
+    if(confirm('대화 기록과 할일을 모두 삭제할까? API 키는 유지돼.')) {
+      localStorage.removeItem('suho_todos');
+      localStorage.removeItem('suho_speakers');
+      alert('삭제됐어.');
     }
   }
+
+  function resetOnboarding() {
+    if(confirm('온보딩을 다시 볼까?')) {
+      localStorage.removeItem('suho_onboarded');
+      window.location.href = 'onboarding.html';
+    }
+  }
+
+  // 공통 모달
+  function showModal(content, onSave, noSaveBtn) {
+    const existing = document.getElementById('suhoModal');
+    if(existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'suhoModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:flex-end;';
+
+    const isDarkMode = document.body.classList.contains('dark');
+    const bg = isDarkMode ? '#0f0f0f' : '#ffffff';
+    const border = isDarkMode ? '#1e1e1e' : '#ebebeb';
+    const textColor = isDarkMode ? '#f0f0f0' : '#111111';
+
+    modal.innerHTML = `
+      <div style="width:100%;background:${bg};border-radius:20px 20px 0 0;padding:20px 20px 40px;max-height:80dvh;overflow-y:auto;color:${textColor};">
+        <div style="width:36px;height:4px;background:${border};border-radius:2px;margin:0 auto 20px;"></div>
+        ${content}
+        ${!noSaveBtn ? `
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <div onclick="closeModal()" style="flex:1;padding:13px;border:1px solid ${border};border-radius:10px;text-align:center;font-size:14px;color:#666666;cursor:pointer;">취소</div>
+            <div onclick="(${onSave ? onSave.toString() : '()=>{}'})()" style="flex:1;padding:13px;background:${isDarkMode?'#f0f0f0':'#111111'};border-radius:10px;text-align:center;font-size:14px;color:${isDarkMode?'#111111':'#ffffff'};font-weight:500;cursor:pointer;">저장</div>
+          </div>
+        ` : `
+          <div onclick="closeModal()" style="margin-top:12px;padding:13px;border:1px solid ${border};border-radius:10px;text-align:center;font-size:14px;color:#666666;cursor:pointer;">닫기</div>
+        `}
+      </div>
+    `;
+
+    modal.addEventListener('click', e => { if(e.target === modal) closeModal(); });
+    document.body.appendChild(modal);
+    setTimeout(() => { const inp = modal.querySelector('input'); if(inp) inp.focus(); }, 100);
+  }
+
+  function closeModal() {
+    const modal = document.getElementById('suhoModal');
+    if(modal) modal.remove();
+  }
+
+  // 초기화
+  function initSettings() {
+    updateKeyStatus();
+    loadToggles();
+    renderSpeakers();
+
+    const words = JSON.parse(localStorage.getItem('suho_keywords') || '[]');
+    document.getElementById('customWordCount').textContent = words.length + '개';
+
+    const filters = JSON.parse(localStorage.getItem('suho_filters') || '[]');
+    document.getElementById('filterCount').textContent = filters.length + '개';
+
+    const retention = localStorage.getItem('suho_retention') || '30일';
+    document.getElementById('retentionValue').textContent = retention;
+
+    const defaultAI = localStorage.getItem('suho_defaultAI') || 'gemini';
+    selectAIChip(defaultAI);
+  }
+
+  initSettings();
 
   updateKeyStatus();
 </script>
