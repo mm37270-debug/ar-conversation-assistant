@@ -310,6 +310,11 @@ body {
       <div class="summary-text" id="summaryText"></div>
     </div>
 
+    <div class="summary" id="termsSection" style="display:none;">
+      <div class="summary-label">📖 TERMS ·</div>
+      <div class="summary-text" id="termsText" style="font-size:11px;line-height:1.9;"></div>
+    </div>
+
     <div class="reply" id="reply">
       <div class="reply-label">REPLY ·</div>
       <div class="reply-text" id="replyText"></div>
@@ -588,16 +593,17 @@ body {
       document.getElementById('reply').classList.remove('visible');
     }
 
-    const prompt = `다음은 상대방이 한 말이야. 아래 형식으로만 답해줘. 다른 말은 절대 하지 마.
+    const prompt = `다음은 상대방이 한 말이야. 반드시 한국어로만 답해줘. 아래 형식으로만 답해줘. 다른 말은 절대 하지 마.
 
 상대방 말: "${fullTranscript.trim()}"
 
 형식:
 [신호] 초록/노랑/빨강 중 하나
-[요약] 핵심 내용 1~2줄
-[대답] 이렇게 대답하면 좋을 것 같아 (1문장)
-[맥락] 상대 감정이나 상황 한 줄
-[용어] 어려운 전문용어나 영어 단어가 있으면 "단어=뜻" 형식으로 나열. 없으면 이 항목 생략.`;
+[요약] 핵심 내용 1~2줄. 모든 전문용어, 영어, 업무용어, 어려운 한자어는 전부 쉬운 한국어로 바꿔줘.
+예시: KPI→성과지표, 마이그레이션→시스템이전, 스테이크홀더→관계자, 애자일→빠르고유연하게, MVP→최소버전, 덱→발표자료, 온보딩→적응교육, 레거시→구식시스템, 싱크→공유, 얼라인→방향맞추기, ROI→투자대비수익, 컨펌→확인승인, 리소스→인력자원, 산출물→결과물, 준거→기준, 협의→상의, 일정→날짜계획, 유관부서→관련부서, 검토→살펴보기, 공람→함께보기
+[대답] 이렇게 대답하면 좋을 것 같아 1문장. 한국어만, 영어 절대 금지.
+[맥락] 상대 감정이나 상황 한 줄. 한국어만.
+[용어] 원래 말에서 어려운 단어가 있으면 각 줄에 "원래단어=쉬운뜻" 형식으로 모두 나열. 없으면 이 항목 생략.`;
 
     let result = null;
 
@@ -724,12 +730,15 @@ body {
 
     if(displayMode) {
       if(summary) {
-        const summaryEl = document.getElementById('summaryText');
-        let summaryContent = summary;
-        if(context) summaryContent += '\n' + context;
-        if(terms) summaryContent += '\n\n📖 ' + terms.replace(/\n/g, ' · ');
-        summaryEl.textContent = summaryContent;
+        document.getElementById('summaryText').textContent = summary + (context ? '\n' + context : '');
         document.getElementById('summary').classList.add('visible');
+      }
+      if(terms) {
+        document.getElementById('termsText').textContent = terms;
+        document.getElementById('termsSection').style.display = 'block';
+        document.getElementById('termsSection').classList.add('visible');
+      } else {
+        document.getElementById('termsSection').style.display = 'none';
       }
       if(reply) {
         document.getElementById('replyText').textContent = reply;
@@ -791,6 +800,7 @@ body {
     document.getElementById('subtitle').classList.remove('visible');
     document.getElementById('summary').classList.remove('visible');
     document.getElementById('reply').classList.remove('visible');
+    document.getElementById('termsSection').style.display = 'none';
     document.getElementById('warning').classList.remove('visible');
     document.getElementById('ttsIndicator').classList.remove('visible');
     document.getElementById('signal').className = 'signal';
