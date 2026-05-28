@@ -701,12 +701,27 @@ body.dark .close-btn { background: #141414; color: #777777; }
       </div>
     </div>
     <div class="setting-row">
-      <div class="setting-left"><div class="setting-icon" style="background:#fce4ec;">🔑</div><div><div class="setting-title">Claude API 키</div><div class="setting-desc">직접 키 입력 시 무제한</div></div></div>
+      <div class="setting-left"><div class="setting-icon" style="background:#fce4ec;">🔑</div><div><div class="setting-title">Claude API 키</div><div class="setting-desc">AI 비서 모드에서 선택 가능</div></div></div>
       <div class="setting-right"><div class="setting-value">미입력</div><div class="setting-arrow">›</div></div>
     </div>
     <div class="setting-row">
-      <div class="setting-left"><div class="setting-icon" style="background:#fce4ec;">🔑</div><div><div class="setting-title">ChatGPT API 키</div><div class="setting-desc">직접 키 입력 시 무제한</div></div></div>
+      <div class="setting-left"><div class="setting-icon" style="background:#fce4ec;">🔑</div><div><div class="setting-title">ChatGPT API 키</div><div class="setting-desc">AI 비서 모드에서 선택 가능</div></div></div>
       <div class="setting-right"><div class="setting-value">미입력</div><div class="setting-arrow">›</div></div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-label">대화 분석 AI (자동 전환)</div>
+    <div class="setting-row">
+      <div class="setting-left"><div class="setting-icon" style="background:#e8f5e9;">1️⃣</div><div><div class="setting-title">Gemini API 키</div><div class="setting-desc">기본 AI · 한도 초과 시 자동 전환</div></div></div>
+      <div class="setting-right"><div class="setting-value" id="geminiStatus">미입력</div><div class="setting-arrow">›</div></div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-left"><div class="setting-icon" style="background:#e8f5e9;">2️⃣</div><div><div class="setting-title">OpenRouter API 키</div><div class="setting-desc">Gemini 한도 초과 시 자동 전환</div></div></div>
+      <div class="setting-right"><div class="setting-value" id="orStatus">미입력</div><div class="setting-arrow">›</div></div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-left"><div class="setting-icon" style="background:#e8f5e9;">3️⃣</div><div><div class="setting-title">Groq API 키</div><div class="setting-desc">OpenRouter 한도 초과 시 자동 전환 · 매일 리셋</div></div></div>
+      <div class="setting-right"><div class="setting-value" id="groqStatus">미입력</div><div class="setting-arrow">›</div></div>
     </div>
 
     <div class="divider"></div>
@@ -803,6 +818,16 @@ body.dark .close-btn { background: #141414; color: #777777; }
 <script>
   let isDark = false;
 
+  // 온보딩 안 했으면 onboarding.html로 이동
+  if(!localStorage.getItem('suho_onboarded')) {
+    window.location.href = 'onboarding.html';
+  }
+
+  // 온보딩 체크
+  if(!localStorage.getItem('suho_onboarded')) {
+    window.location.href = 'onboarding.html';
+  }
+
   const tabs = { home: 0, convo: 1, todo: 2, settings: 3 };
   const screenIds = ['screen-home', 'screen-convo', 'screen-todo', 'screen-settings'];
 
@@ -889,6 +914,20 @@ body.dark .close-btn { background: #141414; color: #777777; }
     document.getElementById('overlay').classList.remove('visible');
     document.getElementById('detailPanel').classList.remove('visible');
   }
+
+  // API 키 상태 표시
+  function updateKeyStatus() {
+    const g = localStorage.getItem('suho_gemini');
+    const o = localStorage.getItem('suho_openrouter');
+    const gr = localStorage.getItem('suho_groq');
+    if(document.getElementById('geminiStatus')) {
+      document.getElementById('geminiStatus').textContent = g ? '입력됨 ✓' : '미입력';
+      document.getElementById('orStatus').textContent = o ? '입력됨 ✓' : '미입력';
+      document.getElementById('groqStatus').textContent = gr ? '입력됨 ✓' : '미입력';
+    }
+  }
+
+  updateKeyStatus();
 </script>
 </body>
 </html>
