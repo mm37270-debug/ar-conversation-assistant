@@ -115,16 +115,25 @@ body {
 
 /* 자막 */
 .subtitle {
-  position: absolute; bottom: 240px; left: 20px; right: 20px;
+  position: absolute; bottom: 300px; left: 20px; right: 20px;
   font-size: 12px; font-weight: 300; color: var(--green-dim);
   line-height: 1.6; opacity: 0; transition: opacity 0.3s;
+  max-height: 48px; overflow: hidden;
 }
 .subtitle.visible { opacity: 1; }
 
+/* 결과 컨테이너 */
+.results {
+  position: absolute; bottom: 100px; top: 120px;
+  left: 20px; right: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+
 /* 요약 */
 .summary {
-  position: absolute; bottom: 170px; left: 20px; right: 20px;
   opacity: 0; transition: all 0.4s; transform: translateY(8px);
+  flex-shrink: 0;
 }
 .summary.visible { opacity: 1; transform: translateY(0); }
 .summary-label { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--green-dim); letter-spacing: 0.15em; margin-bottom: 6px; }
@@ -132,8 +141,8 @@ body {
 
 /* 응답 제안 */
 .reply {
-  position: absolute; bottom: 100px; left: 20px; right: 20px;
   opacity: 0; transition: all 0.4s 0.1s; transform: translateY(8px);
+  flex-shrink: 0;
 }
 .reply.visible { opacity: 1; transform: translateY(0); }
 .reply-label { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--green-dim); letter-spacing: 0.15em; margin-bottom: 6px; }
@@ -295,21 +304,35 @@ body {
   <div class="warning" id="warning"></div>
   <div class="subtitle" id="subtitle"></div>
 
-  <div class="summary" id="summary">
-    <div class="summary-label">SUMMARY ·</div>
-    <div class="summary-text" id="summaryText"></div>
-  </div>
+  <div class="results">
+    <div class="summary" id="summary">
+      <div class="summary-label">SUMMARY ·</div>
+      <div class="summary-text" id="summaryText"></div>
+    </div>
 
-  <div class="reply" id="reply">
-    <div class="reply-label">REPLY ·</div>
-    <div class="reply-text" id="replyText"></div>
+    <div class="reply" id="reply">
+      <div class="reply-label">REPLY ·</div>
+      <div class="reply-text" id="replyText"></div>
+    </div>
   </div>
 
   <div class="tts-indicator blink" id="ttsIndicator">🔊 READING ·</div>
 
+  <!-- 입력 모드 표시 -->
+  <div style="position:absolute;bottom:195px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:8px;color:rgba(0,255,136,0.4);letter-spacing:0.15em;white-space:nowrap;" id="inputModeLabel">🎙️ AUTO · 위로 스와이프하여 전환</div>
+
   <div class="controls">
+    <!-- 텍스트 입력창 -->
+    <div id="textInputWrap" style="display:none;margin-bottom:10px;">
+      <div style="display:flex;gap:8px;">
+        <input id="textInput" placeholder="직접 입력해봐..."
+          style="flex:1;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.3);border-radius:6px;padding:10px 12px;font-size:13px;color:#00ff88;outline:none;font-family:'Noto Sans KR',sans-serif;" />
+        <div onclick="submitText()" style="padding:10px 14px;background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.4);border-radius:6px;font-size:18px;cursor:pointer;">→</div>
+      </div>
+    </div>
+
     <div class="mic-btn" id="micBtn" onclick="toggleMic()">🎙️</div>
-    <div class="mic-status" id="micStatus">탭해서 녹음 시작</div>
+    <div class="mic-status" id="micStatus">AUTO · 자동 감지 중</div>
     <div class="btn-row">
       <div class="ctrl-btn" onclick="analyzeNow()">지금 분석</div>
       <div class="ctrl-btn" onclick="clearAll()">초기화</div>
@@ -339,17 +362,8 @@ body {
 
     <div class="settings-row" style="margin-top:12px;">
       <div>
-        <div class="settings-row-text">OpenRouter</div>
-        <div class="settings-row-sub">Gemini 한도 초과 시 자동 전환</div>
-      </div>
-    </div>
-    <input class="settings-input" id="openrouterKeyInput" type="password" placeholder="sk-or-..." />
-    <a class="settings-link" onclick="window.open('https://openrouter.ai/keys')">발급하러 가기 →</a>
-
-    <div class="settings-row" style="margin-top:12px;">
-      <div>
         <div class="settings-row-text">Groq</div>
-        <div class="settings-row-sub">OpenRouter 한도 초과 시 자동 전환 · 매일 리셋</div>
+        <div class="settings-row-sub">Gemini 한도 초과 시 자동 전환 · 매일 리셋</div>
       </div>
     </div>
     <input class="settings-input" id="groqKeyInput" type="password" placeholder="gsk_..." />
@@ -372,6 +386,79 @@ body {
   let displayMode = true;
   let synth = window.speechSynthesis;
 
+  // 입력 모드: 'auto' | 'manual' | 'text'
+  let inputMode = 'auto';
+  const inputModes = ['auto', 'manual', 'text'];
+  const inputModeLabels = {
+    auto: '🎙️ AUTO · 자동 감지 중',
+    manual: '🎙️ MANUAL · 탭해서 녹음',
+    text: '⌨️ TEXT · 직접 입력'
+  };
+  const inputModeHints = {
+    auto: '🎙️ AUTO · 위로 스와이프하여 전환',
+    manual: '🎙️ MANUAL · 위로 스와이프하여 전환',
+    text: '⌨️ TEXT · 위로 스와이프하여 전환'
+  };
+
+  function setInputMode(mode) {
+    inputMode = mode;
+    const label = document.getElementById('inputModeLabel');
+    const status = document.getElementById('micStatus');
+    const micBtn = document.getElementById('micBtn');
+    const textWrap = document.getElementById('textInputWrap');
+
+    label.textContent = inputModeHints[mode];
+    status.textContent = inputModeLabels[mode];
+
+    if(mode === 'text') {
+      textWrap.style.display = 'block';
+      micBtn.style.display = 'none';
+      if(isRecording) stopMic();
+    } else {
+      textWrap.style.display = 'none';
+      micBtn.style.display = 'flex';
+      if(mode === 'auto') {
+        startMic();
+      } else {
+        if(isRecording) stopMic();
+      }
+    }
+  }
+
+  function cycleInputMode() {
+    const idx = inputModes.indexOf(inputMode);
+    const next = inputModes[(idx + 1) % inputModes.length];
+    setInputMode(next);
+  }
+
+  // 프레임 스와이프 감지 (위로 스와이프 → 모드 전환)
+  let swipeStartY = 0;
+  document.addEventListener('touchstart', e => { swipeStartY = e.touches[0].clientY; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const diff = swipeStartY - e.changedTouches[0].clientY;
+    if(diff > 60) cycleInputMode(); // 위로 스와이프
+  });
+
+  // 텍스트 입력 제출
+  function submitText() {
+    const input = document.getElementById('textInput');
+    const text = input.value.trim();
+    if(!text) return;
+    fullTranscript += text + ' ';
+    if(displayMode) {
+      document.getElementById('subtitle').textContent = fullTranscript.slice(-80);
+      document.getElementById('subtitle').classList.add('visible');
+    }
+    input.value = '';
+    setSignal('yellow');
+    analyzeNow();
+  }
+
+  // 엔터키로 제출
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Enter' && inputMode === 'text') submitText();
+  });
+
   // 저장된 키 불러오기
   window.onload = () => {
     const savedGemini = localStorage.getItem('suho_gemini');
@@ -382,6 +469,7 @@ body {
       document.getElementById('setupScreen').classList.add('hidden');
       document.getElementById('hudScreen').classList.remove('hidden');
       initSpeech();
+      setTimeout(() => setInputMode('auto'), 500);
     }
     if(savedOR) openrouterKey = savedOR;
     if(savedGroq) groqKey = savedGroq;
@@ -403,6 +491,7 @@ body {
     document.getElementById('setupScreen').classList.add('hidden');
     document.getElementById('hudScreen').classList.remove('hidden');
     initSpeech();
+    setTimeout(() => setInputMode('auto'), 500);
   }
 
   function initSpeech() {
@@ -428,9 +517,11 @@ body {
         if(displayMode) showSubtitle(fullTranscript.slice(-80));
         setSignal('yellow');
         clearTimeout(analyzeTimer);
+        // AUTO 모드: 2초 침묵 후 자동 분석 / MANUAL 모드: 3초
+        const delay = inputMode === 'auto' ? 2000 : 3000;
         analyzeTimer = setTimeout(() => {
           if(fullTranscript.trim().length > 10) analyzeNow();
-        }, 3000);
+        }, delay);
       } else if(interim && displayMode) {
         showSubtitle((fullTranscript + interim).slice(-80));
       }
@@ -515,12 +606,6 @@ body {
       if(result) { updateAIName('GEMINI'); currentAI = 'gemini'; }
     }
 
-    // OpenRouter 시도
-    if(!result && openrouterKey) {
-      result = await callOpenRouter(prompt);
-      if(result) { updateAIName('OPENROUTER'); currentAI = 'openrouter'; }
-    }
-
     // Groq 시도
     if(!result && groqKey) {
       result = await callGroq(prompt);
@@ -528,7 +613,7 @@ body {
     }
 
     if(!result) {
-      const debugInfo = `Gemini키:${apiKey?'있음':'없음'} OR키:${openrouterKey?'있음':'없음'} Groq키:${groqKey?'있음':'없음'}`;
+      const debugInfo = `Gemini키:${apiKey?'있음':'없음'} Groq키:${groqKey?'있음':'없음'}`;
       showWarning('모든 AI 실패. ' + debugInfo);
       showLoading(false);
       return;
@@ -568,7 +653,10 @@ body {
           body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: 300 })
         });
         const data = await res.json();
-        if(data.error) continue;
+        if(data.error) {
+          showWarning(`OR오류(${model.split('/')[1]?.split(':')[0]}): ${data.error.message?.slice(0,50)}`);
+          continue;
+        }
         const text = data.choices?.[0]?.message?.content;
         if(text) return text;
       } catch(e) { continue; }
@@ -605,26 +693,33 @@ body {
   }
 
   function parseAndDisplay(text) {
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    // 여러 줄에 걸친 내용도 파싱
     let signal = 'green';
     let summary = '';
     let reply = '';
     let context = '';
 
-    lines.forEach(line => {
-      if(line.startsWith('[신호]')) {
-        const val = line.replace('[신호]', '').trim();
-        if(val.includes('빨강')) signal = 'red';
-        else if(val.includes('노랑')) signal = 'yellow';
-        else signal = 'green';
-      } else if(line.startsWith('[요약]')) {
-        summary = line.replace('[요약]', '').trim();
-      } else if(line.startsWith('[대답]')) {
-        reply = line.replace('[대답]', '').trim();
-      } else if(line.startsWith('[맥락]')) {
-        context = line.replace('[맥락]', '').trim();
-      }
-    });
+    // [태그] 형식 파싱
+    const signalMatch = text.match(/\[신호\]\s*(.+)/);
+    const summaryMatch = text.match(/\[요약\]\s*(.+)/);
+    const replyMatch = text.match(/\[대답\]\s*(.+)/);
+    const contextMatch = text.match(/\[맥락\]\s*(.+)/);
+
+    if(signalMatch) {
+      const val = signalMatch[1];
+      if(val.includes('빨강') || val.includes('red')) signal = 'red';
+      else if(val.includes('노랑') || val.includes('yellow')) signal = 'yellow';
+      else signal = 'green';
+    }
+
+    if(summaryMatch) summary = summaryMatch[1].trim();
+    if(replyMatch) reply = replyMatch[1].trim();
+    if(contextMatch) context = contextMatch[1].trim();
+
+    // 형식 안 지켰을 때 — 전체 텍스트를 요약으로
+    if(!summary && !reply) {
+      summary = text.slice(0, 100);
+    }
 
     setSignal(signal);
 
@@ -635,6 +730,10 @@ body {
       }
       if(reply) {
         document.getElementById('replyText').textContent = reply;
+        document.getElementById('reply').classList.add('visible');
+      } else if(summary) {
+        // 응답 제안 없으면 기본값
+        document.getElementById('replyText').textContent = '잠시 생각해보고 대답해도 좋아.';
         document.getElementById('reply').classList.add('visible');
       }
     }
@@ -712,10 +811,8 @@ body {
 
   function saveSettings() {
     const g = document.getElementById('geminiKeyInput').value.trim();
-    const o = document.getElementById('openrouterKeyInput').value.trim();
     const gr = document.getElementById('groqKeyInput').value.trim();
     if(g) { apiKey = g; localStorage.setItem('suho_gemini', g); }
-    if(o) { openrouterKey = o; localStorage.setItem('suho_openrouter', o); }
     if(gr) { groqKey = gr; localStorage.setItem('suho_groq', gr); }
     closeSettings();
     showWarning('저장됐어 ✓');
