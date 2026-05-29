@@ -638,7 +638,7 @@ body {
     }
 
     // 업무/일상 자동 감지
-    const workKeywords = ['보고', '회의', '마감', '제출', '확인', '검토', '승인', '일정', '프로젝트', '업무', '팀', '팀장', '대리', '과장', '부장', '사장', '클라이언트', '고객', '계약', '예산', '비용', '목표', 'KPI', 'OKR', 'MVP', '덱', '발표'];
+    const workKeywords = ['보고', '회의', '마감', '제출', '확인', '검토', '승인', '일정', '프로젝트', '업무', '팀', '팀장', '대리', '과장', '부장', '사장', '클라이언트', '고객', '계약', '예산', '비용', '목표', 'KPI', 'OKR', 'MVP', '덱', '발표', '초안', '자료', '문서', '작성', '제안', '기획', '전략', '피드백', '수정', '완성', '납기', '데드라인', '오전', '오후', '내일', '다음주', '금요일', '목요일', '수요일', '화요일', '월요일'];
     const isWork = workKeywords.some(w => fullTranscript.includes(w));
 
     const prompt = isWork ?
@@ -731,10 +731,10 @@ body {
 
   async function callGroq(prompt) {
     const models = [
+      'qwen-qwq-32b',
       'llama-3.3-70b-versatile',
-      'llama3-70b-8192',
-      'llama3-8b-8192',
-      'gemma2-9b-it'
+      'gemma2-9b-it',
+      'llama3-70b-8192'
     ];
 
     for(const model of models) {
@@ -765,13 +765,11 @@ body {
     let summary = '';
     let reply = '';
     let context = '';
-    let terms = '';
 
     const signalMatch = text.match(/\[신호\]\s*(.+)/);
-    const summaryMatch = text.match(/\[요약\]\s*(.+)/);
-    const replyMatch = text.match(/\[대답\]\s*(.+)/);
-    const contextMatch = text.match(/\[맥락\]\s*(.+)/);
-    const termsMatch = text.match(/\[용어\]\s*([\s\S]+?)(?=\[|$)/);
+    const summaryMatch = text.match(/\[요약\]\s*([\s\S]+?)(?=\[대답\]|\[맥락\]|\[용어\]|$)/);
+    const replyMatch = text.match(/\[대답\]\s*([\s\S]+?)(?=\[맥락\]|\[용어\]|\[신호\]|$)/);
+    const contextMatch = text.match(/\[맥락\]\s*([\s\S]+?)(?=\[|$)/);
 
     if(signalMatch) {
       const val = signalMatch[1];
@@ -783,9 +781,8 @@ body {
     if(summaryMatch) summary = summaryMatch[1].trim();
     if(replyMatch) reply = replyMatch[1].trim();
     if(contextMatch) context = contextMatch[1].trim();
-    if(termsMatch) terms = termsMatch[1].trim();
 
-    if(!summary && !reply) summary = text.slice(0, 100);
+    if(!summary && !reply) summary = text.slice(0, 150);
 
     setSignal(signal);
 
@@ -805,7 +802,7 @@ body {
 
     if(soundMode && (summary || reply)) {
       setTimeout(() => {
-        const ttsText = (summary ? '요약. ' + summary + '. ' : '') + (reply ? '대답. ' + reply : '');
+        const ttsText = (summary ? summary + '. ' : '') + (reply ? reply : '');
         speak(ttsText);
       }, 800);
     }
