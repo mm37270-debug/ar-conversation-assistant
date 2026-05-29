@@ -420,6 +420,12 @@ body {
     }
   }
 
+  function toggleMic() {
+    if(navigator.vibrate) navigator.vibrate(30);
+    if(isRecording) stopMic();
+    else startMic();
+  }
+
   function cycleInputMode() {
     const idx = inputModes.indexOf(inputMode);
     const next = inputModes[(idx + 1) % inputModes.length];
