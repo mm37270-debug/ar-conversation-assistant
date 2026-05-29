@@ -720,6 +720,10 @@ body.dark .close-btn { background: #141414; color: #777777; }
       <div class="setting-left"><div class="setting-icon" style="background:#e8f5e9;">2️⃣</div><div><div class="setting-title">Groq API 키</div><div class="setting-desc">Claude 한도 초과 시 자동 전환 · 매일 리셋</div></div></div>
       <div class="setting-right"><div class="setting-value" id="groqStatus">미입력</div><div class="setting-arrow">›</div></div>
     </div>
+    <div class="setting-row" onclick="openKeyModal('eleven')">
+      <div class="setting-left"><div class="setting-icon" style="background:#f3e5f5;">🎙️</div><div><div class="setting-title">ElevenLabs API 키</div><div class="setting-desc">자연스러운 목소리 TTS · 월 1만자 무료</div></div></div>
+      <div class="setting-right"><div class="setting-value" id="elevenStatus">미입력</div><div class="setting-arrow">›</div></div>
+    </div>
 
     <div class="divider"></div>
     <div class="section-label">모드 설정</div>
@@ -934,8 +938,8 @@ body.dark .close-btn { background: #141414; color: #777777; }
 
   // API 키 상태 표시
   function updateKeyStatus() {
-    const keys = { claude: 'suho_claude', groq: 'suho_groq', chatgpt: 'suho_chatgpt' };
-    const ids = { claude: 'claudeStatus', groq: 'groqStatus', chatgpt: 'chatgptStatus' };
+    const keys = { claude: 'suho_claude', groq: 'suho_groq', eleven: 'suho_eleven', chatgpt: 'suho_chatgpt' };
+    const ids = { claude: 'claudeStatus', groq: 'groqStatus', eleven: 'elevenStatus', chatgpt: 'chatgptStatus' };
     Object.keys(keys).forEach(k => {
       const el = document.getElementById(ids[k]);
       if(!el) return;
@@ -947,9 +951,9 @@ body.dark .close-btn { background: #141414; color: #777777; }
 
   // API 키 입력 모달
   function openKeyModal(type) {
-    const labels = { claude: 'Claude API 키', groq: 'Groq API 키', chatgpt: 'ChatGPT API 키' };
-    const placeholders = { claude: 'sk-ant-...', groq: 'gsk_...', chatgpt: 'sk-...' };
-    const links = { claude: 'https://console.anthropic.com/', groq: 'https://console.groq.com/keys', chatgpt: 'https://platform.openai.com/api-keys' };
+    const labels = { claude: 'Claude API 키', groq: 'Groq API 키', eleven: 'ElevenLabs API 키', chatgpt: 'ChatGPT API 키' };
+    const placeholders = { claude: 'sk-ant-...', groq: 'gsk_...', eleven: 'sk_...', chatgpt: 'sk-...' };
+    const links = { claude: 'https://console.anthropic.com/', groq: 'https://console.groq.com/keys', eleven: 'https://elevenlabs.io/app/settings/api-keys', chatgpt: 'https://platform.openai.com/api-keys' };
     const saved = localStorage.getItem('suho_' + type) || '';
     showModal(`
       <div style="font-size:15px;font-weight:600;margin-bottom:6px;">${labels[type]}</div>
@@ -973,7 +977,7 @@ body.dark .close-btn { background: #141414; color: #777777; }
 
   // AI 칩 선택
   function selectAIChip(ai) {
-    ['gemini','claude','chatgpt'].forEach(a => {
+    ['claude','chatgpt'].forEach(a => {
       document.getElementById('aiChip' + a.charAt(0).toUpperCase() + a.slice(1)).classList.toggle('selected', a === ai);
     });
     localStorage.setItem('suho_defaultAI', ai);
@@ -1242,7 +1246,7 @@ body.dark .close-btn { background: #141414; color: #777777; }
     const retention = localStorage.getItem('suho_retention') || '30일';
     document.getElementById('retentionValue').textContent = retention;
 
-    const defaultAI = localStorage.getItem('suho_defaultAI') || 'gemini';
+    const defaultAI = localStorage.getItem('suho_defaultAI') || 'claude';
     selectAIChip(defaultAI);
   }
 
