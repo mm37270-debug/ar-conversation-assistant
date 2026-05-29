@@ -122,6 +122,7 @@ body {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  word-break: keep-all;
 }
 .subtitle.visible { opacity: 1; }
 
@@ -618,6 +619,7 @@ body {
     const el = document.getElementById('subtitle');
     el.textContent = text;
     el.classList.add('visible');
+    el.scrollTop = 0; // 항상 앞부터 보이게
   }
 
   function setSignal(color) {
@@ -628,11 +630,15 @@ body {
     document.getElementById('loading').classList.toggle('visible', show);
   }
 
+  let isAnalyzing = false;
+
   async function analyzeNow() {
+    if(isAnalyzing) return; // 분석 중이면 무시
     if(fullTranscript.trim().length < 5) {
       showWarning('말한 내용이 없어. 먼저 녹음해봐.');
       return;
     }
+    isAnalyzing = true;
     showLoading(true);
     if(displayMode) {
       document.getElementById('summary').classList.remove('visible');
@@ -700,8 +706,13 @@ body {
 
     parseAndDisplay(result);
     showLoading(false);
-    // 분석 완료 → 자막 숨기기
-    document.getElementById('subtitle').classList.remove('visible');
+    isAnalyzing = false;
+    fullTranscript = '';
+    // 분석 완료 → 3초 후 자막 숨기기
+    setTimeout(() => {
+      document.getElementById('subtitle').classList.remove('visible');
+      document.getElementById('subtitle').textContent = '';
+    }, 3000);
   }
 
   async function callGemini(prompt) {
@@ -709,8 +720,9 @@ body {
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 300 } })
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 400 } })
       });
+      if(res.status === 429) return null; // 한도 초과 시 바로 포기
       const data = await res.json();
       if(data.error) return null;
       return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
@@ -768,11 +780,12 @@ body {
             { role: 'user', content: prompt }
           ], max_tokens: 400 })
         });
+        if(res.status === 429 || res.status === 400) continue; // 한도/오류 시 다음 모델로
         const data = await res.json();
-        if(data.error) { console.log('Groq error:', model, data.error.message); continue; }
+        if(data.error) continue;
         const text = data.choices?.[0]?.message?.content;
         if(text) return text;
-      } catch(e) { console.log('Groq catch:', model, e); continue; }
+      } catch(e) { continue; }
     }
     return null;
   }
