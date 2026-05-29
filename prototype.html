@@ -533,7 +533,7 @@ body {
         clearTimeout(analyzeTimer);
         const delay = inputMode === 'auto' ? 2000 : 3000;
         analyzeTimer = setTimeout(() => {
-          if(fullTranscript.trim().length > 10) analyzeNow();
+          if(fullTranscript.trim().length > 20) analyzeNow();
         }, delay);
       } else if(interim && displayMode) {
         showSubtitle((fullTranscript + interim).trim());
@@ -551,7 +551,7 @@ body {
       if(inputMode === 'auto') {
         silenceTimer = setTimeout(() => {
           isSpeaking = false;
-          if(fullTranscript.trim().length > 5) analyzeNow();
+          if(fullTranscript.trim().length > 20) analyzeNow();
         }, 1500);
       }
     };
@@ -696,6 +696,8 @@ body {
     showLoading(false);
     isAnalyzing = false;
     fullTranscript = '';
+    clearTimeout(silenceTimer);
+    clearTimeout(analyzeTimer);
     // 분석 완료 → 3초 후 자막 숨기기
     setTimeout(() => {
       document.getElementById('subtitle').classList.remove('visible');
