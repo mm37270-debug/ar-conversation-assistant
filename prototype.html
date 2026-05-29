@@ -3,367 +3,185 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#050a07">
+<link rel="manifest" href="manifest.json">
 <title>SUHO</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+KR:wght@300;400&display=swap" rel="stylesheet">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --green: #00ff88;
+    --green-dim: rgba(0,255,136,0.6);
+    --green-faint: rgba(0,255,136,0.12);
+    --yellow: #ffcc00;
+    --red: #ff4444;
+    --bg: #050a07;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:var(--bg); color:var(--green); font-family:'Noto Sans KR',sans-serif; height:100dvh; overflow:hidden; }
 
-:root {
-  --green: #00ff88;
-  --green-dim: rgba(0,255,136,0.6);
-  --green-faint: rgba(0,255,136,0.12);
-  --red: #ff4444;
-  --yellow: #ffcc00;
-  --blue: #4488ff;
-}
+  /* HUD */
+  #hudScreen { position:relative; width:100%; height:100dvh; }
 
-body {
-  background: #050a07;
-  color: var(--green);
-  font-family: 'Noto Sans KR', sans-serif;
-  height: 100dvh;
-  overflow: hidden;
-}
+  /* 상단 상태 */
+  .top-bar { position:absolute; top:16px; left:16px; right:16px; display:flex; justify-content:space-between; align-items:center; z-index:10; }
+  .ai-name { font-family:'Share Tech Mono',monospace; font-size:9px; color:rgba(0,255,136,0.5); letter-spacing:1px; display:flex; align-items:center; gap:6px; }
+  .ai-dot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+  .signal { width:10px; height:10px; border-radius:50%; opacity:0; transition:all 0.4s; }
+  .signal.green { background:var(--green); box-shadow:0 0 12px var(--green); opacity:1; }
 
-.bg {
-  position: fixed; inset: 0;
-  background: radial-gradient(ellipse at 30% 40%, rgba(0,30,15,0.5) 0%, transparent 60%),
-              radial-gradient(ellipse at 70% 70%, rgba(0,15,8,0.4) 0%, transparent 50%);
-  z-index: 0;
-}
+  /* 모드 토글 */
+  .mode-btns { position:absolute; top:40px; right:16px; display:flex; flex-direction:column; gap:6px; z-index:10; }
+  .mode-btn { padding:4px 8px; border:1px solid rgba(0,255,136,0.1); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:8px; color:rgba(0,255,136,0.3); letter-spacing:1px; cursor:pointer; }
+  .mode-btn.on { border-color:rgba(0,255,136,0.4); color:var(--green); }
 
-.scanlines {
-  position: fixed; inset: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-  z-index: 1; pointer-events: none;
-}
+  /* 자막 */
+  .subtitle { position:absolute; top:60px; left:20px; right:90px; height:100px; overflow-y:scroll; font-size:11px; color:var(--green-dim); line-height:1.6; opacity:0; transition:opacity 0.3s; word-break:keep-all; white-space:normal; }
+  .subtitle.visible { opacity:1; }
 
-/* 설정 화면 */
-.setup-screen {
-  position: fixed; inset: 0; z-index: 50;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 32px 24px; background: #050a07;
-}
+  /* 결과 */
+  .results { position:absolute; top:175px; bottom:130px; left:20px; right:20px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; }
 
-.setup-screen.hidden { display: none; }
+  /* SUMMARY */
+  .summary { opacity:0; transition:all 0.4s; transform:translateY(8px); flex-shrink:0; }
+  .summary.visible { opacity:1; transform:translateY(0); }
+  .section-label { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--green-dim); letter-spacing:0.2em; margin-bottom:6px; }
+  .summary-text { font-size:12px; color:var(--green); line-height:1.8; border-left:1px solid var(--green-faint); padding-left:12px; }
 
-.setup-logo { font-size: 40px; margin-bottom: 16px; }
-.setup-title { font-family: 'Share Tech Mono', monospace; font-size: 22px; color: var(--green); margin-bottom: 6px; letter-spacing: 0.15em; }
-.setup-sub { font-size: 12px; font-weight: 300; color: var(--green-dim); text-align: center; line-height: 1.7; margin-bottom: 32px; }
+  /* 힌트 버튼 */
+  .hint-btn { display:none; margin-top:8px; padding:6px 12px; border:1px solid rgba(0,255,136,0.2); border-radius:4px; cursor:pointer; width:fit-content; font-family:'Share Tech Mono',monospace; font-size:9px; color:rgba(0,255,136,0.4); letter-spacing:0.1em; }
+  .hint-btn:active { opacity:0.7; }
 
-.setup-input {
-  width: 100%; background: var(--green-faint);
-  border: 1px solid var(--green-dim); border-radius: 8px;
-  padding: 14px 16px; font-size: 13px; color: var(--green);
-  font-family: 'Share Tech Mono', monospace; outline: none; margin-bottom: 10px;
-}
+  /* REPLY */
+  .reply { opacity:0; transition:all 0.4s; transform:translateY(8px); flex-shrink:0; }
+  .reply.visible { opacity:1; transform:translateY(0); }
+  .reply-text { font-size:12px; color:var(--green); line-height:1.8; padding:10px 12px; border:1px solid var(--green-faint); background:rgba(0,255,136,0.04); }
 
-.setup-input::placeholder { color: rgba(0,255,136,0.3); }
+  /* ANALYZING */
+  .loading { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--green-dim); letter-spacing:0.2em; opacity:0; transition:opacity 0.3s; }
+  .loading.visible { opacity:1; }
 
-.setup-btn {
-  width: 100%; padding: 14px; background: var(--green);
-  color: #050a07; border-radius: 8px; font-size: 14px;
-  font-weight: 600; cursor: pointer; text-align: center; margin-bottom: 12px;
-}
+  /* TTS */
+  .tts-indicator { position:absolute; bottom:135px; left:20px; font-family:'Share Tech Mono',monospace; font-size:9px; color:#4488ff; letter-spacing:0.1em; opacity:0; transition:opacity 0.3s; }
+  .tts-indicator.visible { opacity:1; }
 
-.setup-link { font-size: 11px; color: var(--green-dim); text-align: center; text-decoration: underline; cursor: pointer; }
+  /* 경고 */
+  .warning { position:absolute; top:45%; left:20px; right:20px; text-align:center; font-size:11px; color:var(--yellow); opacity:0; transition:opacity 0.3s; }
+  .warning.visible { opacity:1; }
 
-/* HUD 화면 */
-.hud-screen { position: fixed; inset: 0; z-index: 10; }
-.hud-screen.hidden { display: none; }
+  /* 컨트롤 */
+  .controls { position:absolute; bottom:0; left:0; right:0; background:rgba(5,10,7,0.95); border-top:1px solid var(--green-faint); padding:12px 16px 28px; }
+  .mic-btn { width:56px; height:56px; border-radius:50%; background:var(--green-faint); border:2px solid var(--green-dim); display:flex; align-items:center; justify-content:center; font-size:22px; cursor:pointer; margin:0 auto 6px; transition:all 0.3s; }
+  .mic-btn.recording { background:rgba(255,68,68,0.15); border-color:var(--red); }
+  .mic-status { font-family:'Share Tech Mono',monospace; font-size:9px; color:rgba(0,255,136,0.4); letter-spacing:2px; text-align:center; margin-bottom:8px; }
+  .btn-row { display:flex; gap:6px; }
+  .ctrl-btn { flex:1; padding:8px 4px; background:var(--green-faint); border:1px solid rgba(0,255,136,0.2); font-family:'Share Tech Mono',monospace; font-size:7px; color:var(--green-dim); letter-spacing:0.5px; text-align:center; cursor:pointer; }
+  .ctrl-btn:active { opacity:0.7; }
 
-/* 상단 상태바 */
-.status-bar {
-  position: absolute; top: 16px; left: 16px; right: 16px;
-  display: flex; align-items: center; justify-content: space-between;
-}
+  /* TEXT 입력 */
+  .text-input-wrap { display:none; margin-bottom:8px; }
+  .text-input-wrap.visible { display:flex; gap:6px; }
+  .text-input { flex:1; background:var(--green-faint); border:1px solid rgba(0,255,136,0.2); color:var(--green); font-size:12px; padding:8px 10px; font-family:'Noto Sans KR',sans-serif; outline:none; }
+  .text-submit { padding:8px 12px; background:var(--green); color:#050a07; font-size:11px; font-weight:600; cursor:pointer; border:none; }
 
-.ai-indicator {
-  display: flex; align-items: center; gap: 6px;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px; color: rgba(0,255,136,0.4);
-  letter-spacing: 0.1em;
-}
+  /* 설정 */
+  .settings-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; opacity:0; pointer-events:none; transition:opacity 0.3s; }
+  .settings-overlay.visible { opacity:1; pointer-events:all; }
+  .settings-panel { position:fixed; bottom:0; left:0; right:0; background:#0a1a0f; border-top:1px solid var(--green-faint); border-radius:20px 20px 0 0; padding:20px 20px 40px; z-index:101; transform:translateY(100%); transition:transform 0.4s cubic-bezier(0.4,0,0.2,1); max-height:85dvh; overflow-y:auto; }
+  .settings-panel.visible { transform:translateY(0); }
+  .settings-handle { width:36px; height:4px; background:var(--green-faint); border-radius:2px; margin:0 auto 20px; }
+  .settings-title { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--green); letter-spacing:0.2em; margin-bottom:20px; }
+  .settings-section { margin-bottom:20px; }
+  .settings-section-title { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--green-dim); letter-spacing:0.15em; margin-bottom:10px; }
+  .settings-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--green-faint); }
+  .settings-row-text { font-size:12px; font-weight:300; color:var(--green); }
+  .settings-row-sub { font-size:10px; color:var(--green-dim); margin-top:2px; }
+  .settings-input { width:100%; background:var(--green-faint); border:1px solid rgba(0,255,136,0.2); border-radius:6px; padding:10px 12px; font-size:11px; color:var(--green); font-family:'Share Tech Mono',monospace; outline:none; margin-top:8px; }
+  .settings-link { font-size:10px; color:var(--green-dim); text-decoration:underline; margin-top:4px; display:block; cursor:pointer; }
+  .settings-save { width:100%; padding:12px; background:var(--green); color:#050a07; border:none; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; text-align:center; margin-top:16px; }
 
-.ai-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
-
-.signal { width: 10px; height: 10px; border-radius: 50%; opacity: 0; transition: all 0.4s; }
-.signal.green { background: var(--green); box-shadow: 0 0 12px var(--green); opacity: 1; }
-.signal.yellow { background: var(--yellow); box-shadow: 0 0 12px var(--yellow); opacity: 1; }
-.signal.red { background: var(--red); box-shadow: 0 0 12px var(--red); opacity: 1; }
-
-/* 모드 토글 */
-.mode-toggles {
-  position: absolute; top: 40px; right: 16px;
-  display: flex; flex-direction: column; gap: 6px;
-}
-
-.mode-btn {
-  display: flex; align-items: center; gap: 6px;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 8px; color: rgba(0,255,136,0.3);
-  letter-spacing: 0.1em; cursor: pointer;
-  padding: 4px 8px;
-  border: 1px solid rgba(0,255,136,0.1);
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.mode-btn.on { color: var(--green); border-color: rgba(0,255,136,0.4); }
-.mode-icon { font-size: 12px; }
-
-/* 자막 */
-.subtitle {
-  position: absolute; top: 60px; left: 20px; right: 80px;
-  font-size: 11px; font-weight: 300; color: var(--green-dim);
-  line-height: 1.6; opacity: 0; transition: opacity 0.3s;
-  height: 100px; overflow-y: scroll;
-  word-break: keep-all; white-space: normal;
-  -webkit-overflow-scrolling: touch;
-}
-.subtitle.visible { opacity: 1; }
-
-/* 결과 컨테이너 */
-.results {
-  position: absolute; bottom: 100px; top: 180px;
-  left: 20px; right: 20px;
-  display: flex; flex-direction: column; gap: 12px;
-  overflow-y: auto; -webkit-overflow-scrolling: touch;
-}
-
-/* 요약 */
-.summary {
-  opacity: 0; transition: all 0.4s; transform: translateY(8px);
-  flex-shrink: 0;
-}
-.summary.visible { opacity: 1; transform: translateY(0); }
-.summary-label { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--green-dim); letter-spacing: 0.15em; margin-bottom: 6px; }
-.summary-text { font-size: 12px; font-weight: 300; color: var(--green); line-height: 1.8; border-left: 1px solid var(--green-faint); padding-left: 12px; }
-
-/* 응답 제안 */
-.reply {
-  opacity: 0; transition: all 0.4s 0.1s; transform: translateY(8px);
-  flex-shrink: 0;
-}
-.reply.visible { opacity: 1; transform: translateY(0); }
-.reply-label { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--green-dim); letter-spacing: 0.15em; margin-bottom: 6px; }
-.reply-text { font-size: 12px; font-weight: 400; color: var(--green); line-height: 1.6; padding: 8px 12px; border: 1px solid var(--green-faint); background: rgba(0,255,136,0.04); }
-
-/* TTS 표시 */
-.tts-indicator {
-  position: absolute; bottom: 88px; left: 20px;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px; color: var(--blue);
-  letter-spacing: 0.1em; opacity: 0; transition: opacity 0.3s;
-}
-.tts-indicator.visible { opacity: 1; }
-
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-.blink { animation: blink 1.2s ease infinite; }
-
-.loading {
-  position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: var(--green-dim);
-  letter-spacing: 0.2em; opacity: 0; transition: opacity 0.3s;
-}
-.loading.visible { opacity: 1; }
-
-.warning {
-  position: absolute; top: 45%; left: 20px; right: 20px;
-  font-size: 11px; color: var(--yellow);
-  text-align: center; opacity: 0; transition: opacity 0.3s;
-}
-.warning.visible { opacity: 1; }
-
-/* 컨트롤 */
-.controls {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-  background: rgba(5,10,7,0.95);
-  border-top: 1px solid var(--green-faint);
-  padding: 12px 16px 24px;
-}
-
-.mic-btn {
-  width: 64px; height: 64px; border-radius: 50%;
-  background: var(--green-faint); border: 2px solid var(--green-dim);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 26px; cursor: pointer; margin: 0 auto 10px;
-  transition: all 0.2s;
-}
-
-.mic-btn.recording {
-  background: rgba(255,68,68,0.15); border-color: var(--red);
-  box-shadow: 0 0 20px rgba(255,68,68,0.3);
-  animation: blink 1s ease infinite;
-}
-
-.mic-status {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px; color: rgba(0,255,136,0.4);
-  letter-spacing: 0.2em; text-align: center; margin-bottom: 10px;
-}
-
-.btn-row { display: flex; gap: 8px; }
-
-.ctrl-btn {
-  flex: 1; padding: 8px 4px;
-  background: var(--green-faint); border: 1px solid rgba(0,255,136,0.2);
-  color: var(--green-dim); font-family: 'Share Tech Mono', monospace;
-  font-size: 8px; letter-spacing: 0.05em; text-align: center; cursor: pointer;
-  transition: all 0.2s;
-}
-.ctrl-btn:active { background: rgba(0,255,136,0.15); border-color: var(--green); color: var(--green); }
-
-/* 설정 패널 */
-.settings-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-  z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s;
-}
-.settings-overlay.visible { opacity: 1; pointer-events: all; }
-
-.settings-panel {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  background: #0a0f0a; border-radius: 20px 20px 0 0;
-  border-top: 1px solid var(--green-faint);
-  z-index: 201; transform: translateY(100%);
-  transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
-  max-height: 85dvh; overflow-y: auto;
-  padding: 16px 20px 40px;
-}
-.settings-panel.visible { transform: translateY(0); }
-
-.settings-handle { width: 36px; height: 4px; background: var(--green-faint); border-radius: 2px; margin: 0 auto 20px; }
-.settings-title { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--green); letter-spacing: 0.2em; margin-bottom: 20px; }
-
-.settings-section { margin-bottom: 20px; }
-.settings-section-title { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--green-dim); letter-spacing: 0.15em; margin-bottom: 10px; }
-
-.settings-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 0; border-bottom: 1px solid var(--green-faint);
-}
-
-.settings-row-text { font-size: 12px; font-weight: 300; color: var(--green); }
-.settings-row-sub { font-size: 10px; color: var(--green-dim); margin-top: 2px; }
-
-.settings-input {
-  width: 100%; background: var(--green-faint);
-  border: 1px solid rgba(0,255,136,0.2); border-radius: 6px;
-  padding: 10px 12px; font-size: 11px; color: var(--green);
-  font-family: 'Share Tech Mono', monospace; outline: none;
-  margin-top: 8px;
-}
-.settings-input::placeholder { color: rgba(0,255,136,0.2); }
-
-.settings-link { font-size: 10px; color: var(--green-dim); text-decoration: underline; cursor: pointer; margin-top: 4px; display: block; }
-
-.settings-save {
-  width: 100%; padding: 12px; background: var(--green);
-  color: #050a07; border-radius: 8px; font-size: 13px;
-  font-weight: 600; cursor: pointer; text-align: center; margin-top: 16px;
-}
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .blink { animation:blink 1.2s ease infinite; }
 </style>
 </head>
 <body>
 
-<div class="bg"></div>
-<div class="scanlines"></div>
-
-<!-- 설정 화면 -->
-<div class="setup-screen" id="setupScreen">
-  <div class="setup-logo">👁</div>
-  <div class="setup-title">SUHO</div>
-  <div class="setup-sub">당신의 대화를 지켜주는 AI<br><br>Gemini API 키를 입력해서 시작해</div>
-  <input class="setup-input" id="apiKeyInput" type="password" placeholder="Gemini API 키 (AIza...)" />
-  <div class="setup-btn" onclick="startApp()">시작하기</div>
-  <div class="setup-link" onclick="window.open('https://aistudio.google.com/apikey')">Gemini API 키 발급하기 →</div>
-</div>
-
-<!-- HUD 화면 -->
-<div class="hud-screen hidden" id="hudScreen">
-
-  <div class="status-bar">
-    <div class="ai-indicator">
-      <div class="ai-dot"></div>
-      <span id="aiName">GEMINI</span>
-    </div>
+<div id="hudScreen">
+  <!-- 상단 -->
+  <div class="top-bar">
+    <div class="ai-name"><div class="ai-dot"></div><span id="aiName">SUHO</span></div>
     <div class="signal" id="signal"></div>
   </div>
 
-  <div class="mode-toggles">
-    <div class="mode-btn on" id="soundBtn" onclick="toggleMode('sound')">
-      <span class="mode-icon">🔊</span> SOUND
-    </div>
-    <div class="mode-btn on" id="displayBtn" onclick="toggleMode('display')">
-      <span class="mode-icon">👁</span> DISPLAY
-    </div>
+  <!-- 모드 토글 -->
+  <div class="mode-btns">
+    <div class="mode-btn on" id="soundBtn" onclick="toggleSound()">🔊 SOUND</div>
+    <div class="mode-btn on" id="displayBtn" onclick="toggleDisplay()">👁 DISPLAY</div>
   </div>
 
-  <div class="loading blink" id="loading">ANALYZING ·</div>
-  <div class="warning" id="warning"></div>
+  <!-- 자막 -->
   <div class="subtitle" id="subtitle"></div>
 
+  <!-- ANALYZING -->
+  <div class="loading blink" id="loading">ANALYZING ·</div>
+
+  <!-- 경고 -->
+  <div class="warning" id="warning"></div>
+
+  <!-- TTS -->
+  <div class="tts-indicator blink" id="ttsIndicator">🔊 READING ·</div>
+
+  <!-- 결과 -->
   <div class="results">
     <div class="summary" id="summary">
-      <div class="summary-label">SUMMARY ·</div>
+      <div class="section-label">SUMMARY ·</div>
       <div class="summary-text" id="summaryText"></div>
     </div>
-
+    <div class="hint-btn" id="hintBtn" onclick="toggleReply()">💡 힌트 보기</div>
     <div class="reply" id="reply">
-      <div class="reply-label">REPLY ·</div>
+      <div class="section-label">REPLY ·</div>
       <div class="reply-text" id="replyText"></div>
     </div>
   </div>
 
-  <div class="tts-indicator blink" id="ttsIndicator">🔊 READING ·</div>
-
+  <!-- 컨트롤 -->
   <div class="controls">
-    <!-- 텍스트 입력창 -->
-    <div id="textInputWrap" style="display:none;margin-bottom:10px;">
-      <div style="display:flex;gap:8px;">
-        <input id="textInput" placeholder="직접 입력해봐..."
-          style="flex:1;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.3);border-radius:6px;padding:10px 12px;font-size:13px;color:#00ff88;outline:none;font-family:'Noto Sans KR',sans-serif;" />
-        <div onclick="submitText()" style="padding:10px 14px;background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.4);border-radius:6px;font-size:18px;cursor:pointer;">→</div>
-      </div>
+    <div class="text-input-wrap" id="textInputWrap">
+      <input class="text-input" id="textInput" placeholder="직접 입력..." />
+      <div class="text-submit" onclick="submitText()">분석</div>
     </div>
-
     <div class="mic-btn" id="micBtn" onclick="toggleMic()">🎙️</div>
-    <div class="mic-status" id="micStatus">AUTO · 자동 감지 중</div>
+    <div class="mic-status" id="micStatus">탭해서 녹음 시작 · MANUAL</div>
     <div class="btn-row">
       <div class="ctrl-btn" onclick="analyzeNow()">지금 분석</div>
       <div class="ctrl-btn" onclick="clearAll()">초기화</div>
-      <div class="ctrl-btn" id="inputModeBtn" onclick="cycleInputMode()">🎙️ AUTO</div>
+      <div class="ctrl-btn" id="modeBtn" onclick="cycleInputMode()">🎤 MANUAL</div>
       <div class="ctrl-btn" onclick="openSettings()">설정</div>
-      <div class="ctrl-btn" onclick="window.location.href='index.html'">홈</div>
+      <div class="ctrl-btn" onclick="location.href='index.html'">홈</div>
     </div>
   </div>
-
 </div>
 
-<!-- 설정 패널 -->
+<!-- 설정 오버레이 -->
 <div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
 <div class="settings-panel" id="settingsPanel">
   <div class="settings-handle"></div>
-  <div class="settings-title">SETTINGS ·</div>
+  <div class="settings-title">SETTINGS</div>
 
   <div class="settings-section">
     <div class="settings-section-title">API 키</div>
     <div class="settings-row">
       <div>
-        <div class="settings-row-text">Gemini</div>
-        <div class="settings-row-sub">기본 AI · 무료 한도 있음</div>
+        <div class="settings-row-text">Claude (우선)</div>
+        <div class="settings-row-sub">제일 잘 함 · 유료</div>
       </div>
     </div>
-    <input class="settings-input" id="geminiKeyInput" type="password" placeholder="AIza..." />
-    <a class="settings-link" onclick="window.open('https://aistudio.google.com/apikey')">발급하러 가기 →</a>
+    <input class="settings-input" id="claudeKeyInput" type="password" placeholder="sk-ant-..." />
+    <a class="settings-link" onclick="window.open('https://console.anthropic.com/')">발급하러 가기 →</a>
 
     <div class="settings-row" style="margin-top:12px;">
       <div>
-        <div class="settings-row-text">Groq</div>
-        <div class="settings-row-sub">Gemini 한도 초과 시 자동 전환 · 매일 리셋</div>
+        <div class="settings-row-text">Groq (백업)</div>
+        <div class="settings-row-sub">Claude 한도 초과 시 자동 전환 · 매일 리셋</div>
       </div>
     </div>
     <input class="settings-input" id="groqKeyInput" type="password" placeholder="gsk_..." />
@@ -387,58 +205,98 @@ body {
 </div>
 
 <script>
-  let apiKey = '';
-  let openrouterKey = '';
+  // 상태
+  let claudeKey = '';
   let groqKey = '';
-  let currentAI = 'gemini';
-  let recognition = null;
-  let isRecording = false;
-  let fullTranscript = '';
-  let analyzeTimer = null;
+  let ttsVolume = 0.6;
   let soundMode = true;
   let displayMode = true;
-  let synth = window.speechSynthesis;
-  let ttsVolume = parseFloat(localStorage.getItem('suho_volume') || '0.6');
+  let isRecording = false;
+  let isAnalyzing = false;
+  let inputMode = 'manual'; // auto | manual | text
+  let fullTranscript = '';
+  let isSpeaking = false;
+  let analyzeTimer = null;
+  let silenceTimer = null;
+  let recognition = null;
+  const synth = window.speechSynthesis;
 
-  function updateVolume(val) {
-    ttsVolume = val / 100;
-    document.getElementById('volumeLabel').textContent = val + '%';
-    localStorage.setItem('suho_volume', ttsVolume);
+  const INPUT_MODES = ['auto', 'manual', 'text'];
+  const WORK_KEYWORDS = ['보고','회의','마감','제출','확인','검토','승인','일정','프로젝트','업무','팀','팀장','대리','과장','부장','사장','클라이언트','고객','계약','예산','비용','목표','KPI','OKR','MVP','덱','발표','초안','자료','문서','작성','제안','기획','전략','피드백','수정','완성','납기','오전','오후','내일','다음주','금요일','목요일','수요일','화요일','월요일'];
+
+  // 초기화
+  window.onload = () => {
+    claudeKey = localStorage.getItem('suho_claude') || '';
+    groqKey = localStorage.getItem('suho_groq') || '';
+    ttsVolume = parseFloat(localStorage.getItem('suho_volume') || '0.6');
+    initSpeech();
+    if('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
+  };
+
+  // STT
+  function initSpeech() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR) { showWarning('이 브라우저는 음성 인식을 지원하지 않아.'); return; }
+    recognition = new SR();
+    recognition.lang = 'ko-KR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onstart = () => { setSignal('green'); };
+
+    recognition.onsoundstart = () => {
+      if(inputMode === 'auto') clearTimeout(silenceTimer);
+    };
+
+    recognition.onsoundend = () => {
+      if(inputMode === 'auto') {
+        silenceTimer = setTimeout(() => {
+          if(fullTranscript.trim().length > 20) analyzeNow();
+        }, 1500);
+      }
+    };
+
+    recognition.onresult = (e) => {
+      let interim = '', final = '';
+      for(let i = e.resultIndex; i < e.results.length; i++) {
+        if(e.results[i].isFinal) final += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      if(final) {
+        fullTranscript += final + ' ';
+        if(displayMode) showSubtitle(fullTranscript.trim());
+        setSignal('green');
+        if(inputMode !== 'auto') {
+          clearTimeout(analyzeTimer);
+          analyzeTimer = setTimeout(() => {
+            if(fullTranscript.trim().length > 20) analyzeNow();
+          }, 3000);
+        }
+      } else if(interim && displayMode) {
+        showSubtitle((fullTranscript + interim).trim());
+      }
+    };
+
+    recognition.onerror = (e) => {
+      if(e.error !== 'no-speech') stopMic();
+    };
+
+    recognition.onend = () => {
+      if(isRecording) { try { recognition.start(); } catch(e){} }
+    };
   }
 
-  // 입력 모드: 'auto' | 'manual' | 'text'
-  let inputMode = 'auto';
-  const inputModes = ['auto', 'manual', 'text'];
+  function startMic() {
+    if(!recognition) return;
+    try { recognition.start(); isRecording = true; updateMicBtn(); } catch(e){}
+  }
 
-  function setInputMode(mode) {
-    inputMode = mode;
-    const status = document.getElementById('micStatus');
-    const micBtn = document.getElementById('micBtn');
-    const textWrap = document.getElementById('textInputWrap');
-    const modeBtn = document.getElementById('inputModeBtn');
-
-    const modeLabels = { auto: '🎙️ AUTO', manual: '🎙️ MANUAL', text: '⌨️ TEXT' };
-    const statusLabels = { auto: 'AUTO · 말하면 자동 감지', manual: 'MANUAL · 탭해서 녹음', text: 'TEXT · 직접 입력' };
-
-    if(modeBtn) modeBtn.textContent = modeLabels[mode];
-    if(status) status.textContent = statusLabels[mode];
-
-    if(mode === 'auto') {
-      textWrap.style.display = 'none';
-      micBtn.style.display = 'flex';
-      stopMic();
-      startVAD();
-    } else if(mode === 'manual') {
-      stopVAD();
-      textWrap.style.display = 'none';
-      micBtn.style.display = 'flex';
-      if(isRecording) stopMic();
-    } else {
-      stopVAD();
-      if(isRecording) stopMic();
-      textWrap.style.display = 'block';
-      micBtn.style.display = 'none';
-    }
+  function stopMic() {
+    if(!recognition) return;
+    try { recognition.stop(); } catch(e){}
+    isRecording = false;
+    setSignal(null);
+    updateMicBtn();
   }
 
   function toggleMic() {
@@ -447,25 +305,44 @@ body {
     else startMic();
   }
 
-  function cycleInputMode() {
-    const idx = inputModes.indexOf(inputMode);
-    const next = inputModes[(idx + 1) % inputModes.length];
-    setInputMode(next);
-    if(navigator.vibrate) navigator.vibrate(50);
+  function updateMicBtn() {
+    const btn = document.getElementById('micBtn');
+    btn.textContent = isRecording ? '⏹️' : '🎙️';
+    btn.className = isRecording ? 'mic-btn recording' : 'mic-btn';
+    document.getElementById('micStatus').textContent =
+      (isRecording ? '녹음 중 · ' : '탭해서 녹음 시작 · ') + inputMode.toUpperCase();
   }
 
-  // 텍스트 입력 제출
+  // 입력 모드
+  function cycleInputMode() {
+    if(navigator.vibrate) navigator.vibrate(50);
+    const idx = INPUT_MODES.indexOf(inputMode);
+    setInputMode(INPUT_MODES[(idx + 1) % INPUT_MODES.length]);
+  }
+
+  function setInputMode(mode) {
+    inputMode = mode;
+    document.getElementById('modeBtn').textContent = '🎤 ' + mode.toUpperCase();
+    const textWrap = document.getElementById('textInputWrap');
+    if(mode === 'text') {
+      textWrap.classList.add('visible');
+      stopMic();
+    } else {
+      textWrap.classList.remove('visible');
+      if(mode === 'auto') startMic();
+    }
+    updateMicBtn();
+  }
+
+  // 텍스트 입력
   function submitText() {
     const input = document.getElementById('textInput');
     const text = input.value.trim();
     if(!text) return;
     fullTranscript += text + ' ';
-    if(displayMode) {
-      document.getElementById('subtitle').textContent = text.slice(0, 30);
-      document.getElementById('subtitle').classList.add('visible');
-    }
+    if(displayMode) showSubtitle(fullTranscript.trim());
     input.value = '';
-    setSignal('yellow');
+    setSignal('green');
     analyzeNow();
   }
 
@@ -473,135 +350,13 @@ body {
     if(e.key === 'Enter' && inputMode === 'text') submitText();
   });
 
-  // 저장된 키 불러오기
-  window.onload = () => {
-    const savedGemini = localStorage.getItem('suho_gemini');
-    const savedOR = localStorage.getItem('suho_openrouter');
-    const savedGroq = localStorage.getItem('suho_groq');
-    if(savedGemini) {
-      apiKey = savedGemini;
-      document.getElementById('setupScreen').classList.add('hidden');
-      document.getElementById('hudScreen').classList.remove('hidden');
-      initSpeech();
-      setTimeout(() => setInputMode('auto'), 500);
-    }
-    if(savedOR) openrouterKey = savedOR;
-    if(savedGroq) groqKey = savedGroq;
-
-    // Wake Lock — 화면 꺼짐 방지
-    if('wakeLock' in navigator) {
-      navigator.wakeLock.request('screen').catch(() => {});
-    }
-  };
-
-  function startApp() {
-    const key = document.getElementById('apiKeyInput').value.trim();
-    if(!key || !key.startsWith('AIza')) {
-      alert('올바른 Gemini API 키를 입력해줘 (AIza로 시작)');
-      return;
-    }
-    apiKey = key;
-    localStorage.setItem('suho_gemini', key);
-    document.getElementById('setupScreen').classList.add('hidden');
-    document.getElementById('hudScreen').classList.remove('hidden');
-    initSpeech();
-    setTimeout(() => setInputMode('auto'), 500);
+  // 신호
+  function setSignal(color) {
+    const el = document.getElementById('signal');
+    el.className = color === 'green' ? 'signal green' : 'signal';
   }
 
-  function initSpeech() {
-    if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      document.getElementById('micStatus').textContent = '음성 인식 미지원 브라우저';
-      return;
-    }
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SR();
-    recognition.lang = 'ko-KR';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    recognition.onresult = (e) => {
-      let interim = '';
-      let final = '';
-      for(let i = e.resultIndex; i < e.results.length; i++) {
-        if(e.results[i].isFinal) final += e.results[i][0].transcript;
-        else interim += e.results[i][0].transcript;
-      }
-      if(final) {
-        fullTranscript += final + ' ';
-        if(displayMode) showSubtitle(fullTranscript.trim());
-        setSignal('yellow');
-        clearTimeout(analyzeTimer);
-        const delay = inputMode === 'auto' ? 2000 : 3000;
-        analyzeTimer = setTimeout(() => {
-          if(fullTranscript.trim().length > 20) analyzeNow();
-        }, delay);
-      } else if(interim && displayMode) {
-        showSubtitle((fullTranscript + interim).trim());
-      }
-    };
-
-    recognition.onsoundstart = () => {
-      if(inputMode === 'auto' && !isSpeaking) {
-        isSpeaking = true;
-        clearTimeout(silenceTimer);
-      }
-    };
-
-    recognition.onsoundend = () => {
-      if(inputMode === 'auto') {
-        silenceTimer = setTimeout(() => {
-          isSpeaking = false;
-          if(fullTranscript.trim().length > 20) analyzeNow();
-        }, 1500);
-      }
-    };
-
-    recognition.onerror = (e) => {
-      if(e.error !== 'no-speech') { stopMic(); }
-    };
-
-    recognition.onend = () => {
-      if(isRecording) { try { recognition.start(); } catch(e) {} }
-    };
-  }
-
-  // VAD 관련 변수 (onsoundstart/end 방식으로 변경)
-  let isSpeaking = false;
-  let silenceTimer = null;
-
-  function startVAD() {
-    // Web Speech API 이벤트 기반으로 처리 — 별도 마이크 불필요
-    startMic();
-  }
-
-  function stopVAD() {
-    if(silenceTimer) clearTimeout(silenceTimer);
-    isSpeaking = false;
-    stopMic();
-  }
-
-  function startMic() {
-    if(!recognition) return;
-    try {
-      recognition.start();
-      isRecording = true;
-      document.getElementById('micBtn').classList.add('recording');
-      document.getElementById('micBtn').textContent = '⏹️';
-      document.getElementById('micStatus').textContent = '녹음 중 · 말해봐';
-      setSignal('green');
-    } catch(e) {}
-  }
-
-  function stopMic() {
-    if(!recognition) return;
-    recognition.stop();
-    isRecording = false;
-    document.getElementById('micBtn').classList.remove('recording');
-    document.getElementById('micBtn').textContent = '🎙️';
-    document.getElementById('micStatus').textContent = '탭해서 녹음 시작';
-    clearTimeout(analyzeTimer);
-  }
-
+  // 자막
   function showSubtitle(text) {
     const el = document.getElementById('subtitle');
     el.textContent = text;
@@ -609,41 +364,57 @@ body {
     el.scrollTop = 0;
   }
 
-  function setSignal(color) {
-    document.getElementById('signal').className = 'signal ' + color;
-  }
-
-  function showLoading(show) {
-    document.getElementById('loading').classList.toggle('visible', show);
-  }
-
-  let isAnalyzing = false;
-
+  // 분석
   async function analyzeNow() {
-    if(isAnalyzing) return; // 분석 중이면 무시
-    if(fullTranscript.trim().length < 5) {
-      showWarning('말한 내용이 없어. 먼저 녹음해봐.');
-      return;
-    }
+    if(isAnalyzing) return;
+    const text = fullTranscript.trim();
+    if(text.length < 10) { showWarning('더 말해봐.'); return; }
+
     isAnalyzing = true;
     showLoading(true);
-    if(displayMode) {
-      document.getElementById('summary').classList.remove('visible');
-      document.getElementById('reply').classList.remove('visible');
+    setSignal(null);
+    clearTimeout(analyzeTimer);
+    clearTimeout(silenceTimer);
+
+    const isWork = WORK_KEYWORDS.some(w => text.includes(w));
+    const prompt = buildPrompt(text, isWork);
+
+    let result = null;
+
+    // Claude 우선
+    if(claudeKey) {
+      result = await callClaude(prompt);
+      if(result) updateAIName('CLAUDE');
     }
 
-    // 업무/일상 자동 감지
-    const workKeywords = ['보고', '회의', '마감', '제출', '확인', '검토', '승인', '일정', '프로젝트', '업무', '팀', '팀장', '대리', '과장', '부장', '사장', '클라이언트', '고객', '계약', '예산', '비용', '목표', 'KPI', 'OKR', 'MVP', '덱', '발표', '초안', '자료', '문서', '작성', '제안', '기획', '전략', '피드백', '수정', '완성', '납기', '데드라인', '오전', '오후', '내일', '다음주', '금요일', '목요일', '수요일', '화요일', '월요일'];
-    const isWork = workKeywords.some(w => fullTranscript.includes(w));
+    // Groq 백업
+    if(!result && groqKey) {
+      result = await callGroq(prompt);
+      if(result) updateAIName('GROQ');
+    }
 
-    const prompt = isWork ?
-`너는 신입 직원을 돕는 AI야. 순수 한국어만. 한자·영어 절대 금지.
+    showLoading(false);
+
+    if(!result) {
+      showWarning('AI 연결 실패. API 키를 설정에서 확인해봐.');
+      isAnalyzing = false;
+      return;
+    }
+
+    parseAndDisplay(result);
+    fullTranscript = '';
+    isAnalyzing = false;
+    setSignal(null);
+  }
+
+  // 프롬프트
+  function buildPrompt(text, isWork) {
+    if(isWork) return `너는 신입 직원을 돕는 AI야. 상사가 신입에게 한 말을 분석해서 아래 형식으로만 답해. 순수 한국어만. 한자·영어 절대 금지.
 
 규칙:
 1. 말에 이미 있는 정보는 절대 묻지 마
-2. 말에 없는 정보가 있을 때만 딱 1개 물어봐. 업무 지시면 주로 마감. 역할 위임이면 어떤 상황일 때 보고해야 하는지.
-3. 말에 없는 정보가 없으면 되묻기 없이 확인만 해. 예: "그럼 저는 ~하면 될까요?"
-3. 대답은 반드시 "그럼 저는 ~하면 될까요?" 로 시작
+2. 말에 없는 정보가 있을 때만 딱 1개 물어봐 (주로 마감, 보고 기준)
+3. 말에 없는 정보가 없으면 되묻기 없이 확인만 해
 
 예시1:
 상대방 말: "영주씨, 이번 Q3 OKR 달성률이 저조해서 KPI 재조정이 필요한데, 레거시 시스템 마이그레이션 이슈랑 맞물려서 리소스 배분이 타이트해요. 스테이크홀더들한테 공유할 덱 만들어줄 수 있어요? 애자일하게 접근해서 MVP 버전으로 먼저 드래프트해주시면 될 것 같아요."
@@ -657,122 +428,56 @@ body {
 [요약] 프로젝트 관리자 역할 맡아서 주요 일정과 인력 관리하고 문제 생기면 상위에 보고해달라고 했다.
 [대답] 이렇게 대답해봐: 그럼 제가 일정이랑 인력 관리 맡으면 될까요? 어떤 상황일 때 보고드리면 될지 기준 알 수 있을까요?
 
+예시3:
+상대방 말: "영주씨, 이번 주 금요일까지 클라이언트 제안서 초안 만들어줘야 하는데, A프로젝트 방향으로 비주얼 강조해서 예산안도 같이 첨부해줘. 목요일 오전까지는 팀장님한테 중간보고도 해야 해."
+[신호] 노랑
+[요약] 금요일까지 A프로젝트 방향으로 비주얼 강조한 고객 제안서에 예산안 첨부해서 만들어야 하고, 목요일 오전까지 팀장님께 중간보고도 해야 한다.
+[대답] 이렇게 대답해봐: 그럼 저는 A프로젝트 방향으로 제안서 만들고 예산안 첨부해서 금요일까지, 목요일 오전엔 중간보고 드리면 될까요?
+
 이제 분석해줘:
-상대방 말: "${fullTranscript.trim()}"
+상대방 말: "${text}"
 [신호]
 [요약]
-[대답] 이렇게 대답해봐:`
-:
-`상대방이 한 말이야. 한국어로만 답해.
+[대답] 이렇게 대답해봐:`;
 
-상대방 말: "${fullTranscript.trim()}"
+    return `상대방이 한 말이야. 한국어로만 답해.
+
+상대방 말: "${text}"
 
 [신호] 초록/노랑/빨강
 [요약] 핵심 1줄. 쉬운 한국어로.
 [대답] 이렇게 대답해봐: 자연스러운 일상 응답 1문장. 되묻기 없이.`;
-
-    let result = null;
-
-    // Gemini 시도
-    if(apiKey) {
-      result = await callGemini(prompt);
-      if(result) { updateAIName('GEMINI'); currentAI = 'gemini'; }
-    }
-
-    // Groq 시도
-    if(!result && groqKey) {
-      result = await callGroq(prompt);
-      if(result) { updateAIName('GROQ'); currentAI = 'groq'; }
-    }
-
-    if(!result) {
-      const debugInfo = `Gemini키:${apiKey?'있음':'없음'} Groq키:${groqKey?'있음':'없음'}`;
-      showWarning('모든 AI 실패. ' + debugInfo);
-      showLoading(false);
-      return;
-    }
-
-    parseAndDisplay(result);
-    showLoading(false);
-    isAnalyzing = false;
-    fullTranscript = '';
-    clearTimeout(silenceTimer);
-    clearTimeout(analyzeTimer);
-    // 분석 완료 → 3초 후 자막 숨기기
-    setTimeout(() => {
-      document.getElementById('subtitle').classList.remove('visible');
-      document.getElementById('subtitle').textContent = '';
-    }, 3000);
   }
 
-  async function callGemini(prompt) {
+  // Claude API
+  async function callClaude(prompt) {
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 400 } })
+        headers: { 'Content-Type': 'application/json', 'x-api-key': claudeKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 400, messages: [{ role: 'user', content: prompt }] })
       });
-      if(res.status === 429) return null; // 한도 초과 시 바로 포기
       const data = await res.json();
-      if(data.error) return null;
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+      if(data.error) { console.log('Claude 오류:', data.error.message); return null; }
+      return data.content?.[0]?.text || null;
     } catch(e) { return null; }
   }
 
-  async function callOpenRouter(prompt) {
-    const freeModels = [
-      'deepseek/deepseek-chat-v3-0324:free',
-      'meta-llama/llama-3.3-70b-instruct:free',
-      'google/gemma-3-27b-it:free',
-      'qwen/qwen3-8b:free',
-      'mistralai/mistral-7b-instruct:free'
-    ];
-
-    for(const model of freeModels) {
-      try {
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openrouterKey}` },
-          body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: 300 })
-        });
-        const data = await res.json();
-        if(data.error) {
-          showWarning(`OR오류(${model.split('/')[1]?.split(':')[0]}): ${data.error.message?.slice(0,50)}`);
-          continue;
-        }
-        const text = data.choices?.[0]?.message?.content;
-        if(text) return text;
-      } catch(e) { continue; }
-    }
-    return null;
-  }
-
+  // Groq API
   async function callGroq(prompt) {
-    const models = [
-      'llama-3.3-70b-versatile',
-      'llama3-70b-8192',
-      'gemma2-9b-it'
-    ];
-
+    const models = ['llama-3.3-70b-versatile', 'llama3-70b-8192', 'gemma2-9b-it'];
     for(const model of models) {
       try {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
           body: JSON.stringify({ model, messages: [
-            { role: 'system', content: `당신은 한국어 대화 분석 AI입니다. 반드시 아래 형식으로만 답하세요. 절대 다른 말 하지 마세요.
-
-[신호] 초록 또는 노랑 또는 빨강
-[요약] 여기에 요약 내용
-[대답] 이렇게 대답해봐: 여기에 대답 예시
-
-이 형식을 절대 바꾸지 마세요. 각 항목을 반드시 새 줄에 써야 합니다.` },
+            { role: 'system', content: '한국어 대화 분석 AI. [신호] [요약] [대답] 형식으로만 답해. 한국어만.' },
             { role: 'user', content: prompt }
           ], max_tokens: 400 })
         });
-        if(res.status === 429 || res.status === 400) continue; // 한도/오류 시 다음 모델로
         const data = await res.json();
-        if(data.error) continue;
+        if(data.error) { console.log('Groq 오류:', model, data.error.message); continue; }
         const text = data.choices?.[0]?.message?.content;
         if(text) return text;
       } catch(e) { continue; }
@@ -780,32 +485,15 @@ body {
     return null;
   }
 
-  function updateAIName(name) {
-    document.getElementById('aiName').textContent = name;
-  }
-
+  // 파싱 & 표시
   function parseAndDisplay(text) {
-    let signal = 'green';
-    let summary = '';
-    let reply = '';
+    const summaryMatch = text.match(/\[요약\]\s*([\s\S]+?)(?=\[대답\]|$)/);
+    const replyMatch = text.match(/\[대답\]\s*([\s\S]+?)(?=\[신호\]|$)/);
 
-    const signalMatch = text.match(/\[신호\]\s*(.+)/);
-    const summaryMatch = text.match(/\[요약\]\s*([\s\S]+?)(?=\[대답\]|\[맥락\]|\[용어\]|$)/);
-    const replyMatch = text.match(/\[대답\]\s*([\s\S]+?)(?=\[맥락\]|\[용어\]|\[신호\]|$)/);
+    const summary = summaryMatch?.[1]?.trim() || '';
+    const reply = replyMatch?.[1]?.trim() || '';
 
-    if(signalMatch) {
-      const val = signalMatch[1];
-      if(val.includes('빨강') || val.includes('red')) signal = 'red';
-      else if(val.includes('노랑') || val.includes('yellow')) signal = 'yellow';
-      else signal = 'green';
-    }
-
-    if(summaryMatch) summary = summaryMatch[1].trim();
-    if(replyMatch) reply = replyMatch[1].trim();
-
-    if(!summary && !reply) summary = text.slice(0, 150);
-
-    setSignal(signal);
+    if(!summary && !reply) return;
 
     if(displayMode) {
       if(summary) {
@@ -814,72 +502,84 @@ body {
       }
       if(reply) {
         document.getElementById('replyText').textContent = reply;
-        document.getElementById('reply').classList.add('visible');
-      } else if(summary) {
-        document.getElementById('replyText').textContent = '잠시 생각해보고 대답해도 좋아.';
-        document.getElementById('reply').classList.add('visible');
-      }
-    }
-
-    if(soundMode && (summary || reply)) {
-      setTimeout(() => {
-        const ttsText = (summary ? summary + '. ' : '') + (reply ? reply : '');
-        speak(ttsText);
-      }, 800);
-    }
-  }
-
-  function speak(text) {
-    if(!synth) return;
-    synth.cancel();
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.lang = 'ko-KR';
-    utt.volume = ttsVolume;
-    utt.rate = 1.1;
-
-    utt.onstart = () => document.getElementById('ttsIndicator').classList.add('visible');
-    utt.onend = () => document.getElementById('ttsIndicator').classList.remove('visible');
-
-    synth.speak(utt);
-  }
-
-  function toggleMode(mode) {
-    if(mode === 'sound') {
-      soundMode = !soundMode;
-      document.getElementById('soundBtn').classList.toggle('on', soundMode);
-    } else {
-      displayMode = !displayMode;
-      document.getElementById('displayBtn').classList.toggle('on', displayMode);
-      if(!displayMode) {
-        document.getElementById('subtitle').classList.remove('visible');
-        document.getElementById('summary').classList.remove('visible');
+        document.getElementById('hintBtn').style.display = 'block';
+        document.getElementById('hintBtn').textContent = '💡 힌트 보기';
         document.getElementById('reply').classList.remove('visible');
       }
     }
+
+    if(soundMode && summary) {
+      setTimeout(() => speak(summary), 800);
+    }
   }
+
+  // 힌트 토글
+  function toggleReply() {
+    const reply = document.getElementById('reply');
+    const btn = document.getElementById('hintBtn');
+    if(reply.classList.contains('visible')) {
+      reply.classList.remove('visible');
+      btn.textContent = '💡 힌트 보기';
+    } else {
+      reply.classList.add('visible');
+      btn.textContent = '💡 힌트 숨기기';
+    }
+  }
+
+  // TTS
+  function speak(text) {
+    if(!soundMode) return;
+    synth.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = 'ko-KR';
+    utt.rate = 0.9;
+    utt.volume = ttsVolume;
+    utt.onstart = () => { document.getElementById('ttsIndicator').classList.add('visible'); };
+    utt.onend = () => { document.getElementById('ttsIndicator').classList.remove('visible'); };
+    synth.speak(utt);
+  }
+
+  // UI 유틸
+  function showLoading(v) { document.getElementById('loading').classList.toggle('visible', v); }
+  function updateAIName(name) { document.getElementById('aiName').textContent = name; }
 
   function showWarning(msg) {
     const el = document.getElementById('warning');
-    el.textContent = '⚠ ' + msg;
+    el.textContent = msg;
     el.classList.add('visible');
-    setTimeout(() => el.classList.remove('visible'), 4000);
+    setTimeout(() => el.classList.remove('visible'), 3000);
+  }
+
+  function toggleSound() {
+    soundMode = !soundMode;
+    document.getElementById('soundBtn').className = 'mode-btn' + (soundMode ? ' on' : '');
+    if(!soundMode) synth.cancel();
+  }
+
+  function toggleDisplay() {
+    displayMode = !displayMode;
+    document.getElementById('displayBtn').className = 'mode-btn' + (displayMode ? ' on' : '');
   }
 
   function clearAll() {
     fullTranscript = '';
     clearTimeout(analyzeTimer);
+    clearTimeout(silenceTimer);
     synth.cancel();
+    setSignal(null);
+    document.getElementById('subtitle').textContent = '';
     document.getElementById('subtitle').classList.remove('visible');
     document.getElementById('summary').classList.remove('visible');
     document.getElementById('reply').classList.remove('visible');
+    document.getElementById('hintBtn').style.display = 'none';
     document.getElementById('warning').classList.remove('visible');
     document.getElementById('ttsIndicator').classList.remove('visible');
-    document.getElementById('signal').className = 'signal';
-    document.getElementById('subtitle').textContent = '';
+    document.getElementById('loading').classList.remove('visible');
   }
 
+  // 설정
   function openSettings() {
-    document.getElementById('geminiKeyInput').value = localStorage.getItem('suho_gemini') || '';
+    document.getElementById('claudeKeyInput').value = localStorage.getItem('suho_claude') || '';
     document.getElementById('groqKeyInput').value = localStorage.getItem('suho_groq') || '';
     const vol = Math.round(ttsVolume * 100);
     document.getElementById('volumeSlider').value = vol;
@@ -893,11 +593,17 @@ body {
     document.getElementById('settingsPanel').classList.remove('visible');
   }
 
+  function updateVolume(val) {
+    ttsVolume = val / 100;
+    document.getElementById('volumeLabel').textContent = val + '%';
+  }
+
   function saveSettings() {
-    const g = document.getElementById('geminiKeyInput').value.trim();
-    const gr = document.getElementById('groqKeyInput').value.trim();
-    if(g) { apiKey = g; localStorage.setItem('suho_gemini', g); }
-    if(gr) { groqKey = gr; localStorage.setItem('suho_groq', gr); }
+    const c = document.getElementById('claudeKeyInput').value.trim();
+    const g = document.getElementById('groqKeyInput').value.trim();
+    if(c) { claudeKey = c; localStorage.setItem('suho_claude', c); }
+    if(g) { groqKey = g; localStorage.setItem('suho_groq', g); }
+    localStorage.setItem('suho_volume', ttsVolume);
     closeSettings();
     showWarning('저장됐어 ✓');
   }

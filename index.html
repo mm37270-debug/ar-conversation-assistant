@@ -697,8 +697,7 @@ body.dark .close-btn { background: #141414; color: #777777; }
         <div><div class="setting-title">기본 AI (비서 모드)</div></div>
       </div>
       <div class="ai-chips" style="padding:0;border:none;">
-        <div class="ai-chip selected" id="aiChipGemini" onclick="selectAIChip('gemini')">Gemini</div>
-        <div class="ai-chip" id="aiChipClaude" onclick="selectAIChip('claude')">Claude</div>
+        <div class="ai-chip selected" id="aiChipClaude" onclick="selectAIChip('claude')">Claude</div>
         <div class="ai-chip" id="aiChipChatgpt" onclick="selectAIChip('chatgpt')">ChatGPT</div>
       </div>
     </div>
@@ -713,23 +712,19 @@ body.dark .close-btn { background: #141414; color: #777777; }
 
     <div class="divider"></div>
     <div class="section-label">대화 분석 AI (자동 전환)</div>
-    <div class="setting-row" onclick="openKeyModal('gemini')">
-      <div class="setting-left"><div class="setting-icon" style="background:#e8f5e9;">1️⃣</div><div><div class="setting-title">Gemini API 키</div><div class="setting-desc">기본 AI · 한도 초과 시 자동 전환</div></div></div>
-      <div class="setting-right"><div class="setting-value" id="geminiStatus">미입력</div><div class="setting-arrow">›</div></div>
-    </div>
-    <div class="setting-row" onclick="openKeyModal('openrouter')">
-      <div class="setting-left"><div class="setting-icon" style="background:#e8f5e9;">2️⃣</div><div><div class="setting-title">OpenRouter API 키</div><div class="setting-desc">Gemini 한도 초과 시 자동 전환</div></div></div>
-      <div class="setting-right"><div class="setting-value" id="orStatus">미입력</div><div class="setting-arrow">›</div></div>
+    <div class="setting-row" onclick="openKeyModal('claude')">
+      <div class="setting-left"><div class="setting-icon" style="background:#e8f5e9;">1️⃣</div><div><div class="setting-title">Claude API 키</div><div class="setting-desc">기본 · 한도 초과 시 Groq으로 자동 전환</div></div></div>
+      <div class="setting-right"><div class="setting-value" id="claudeAnalysisStatus">미입력</div><div class="setting-arrow">›</div></div>
     </div>
     <div class="setting-row" onclick="openKeyModal('groq')">
-      <div class="setting-left"><div class="setting-icon" style="background:#e8f5e9;">3️⃣</div><div><div class="setting-title">Groq API 키</div><div class="setting-desc">OpenRouter 한도 초과 시 자동 전환 · 매일 리셋</div></div></div>
+      <div class="setting-left"><div class="setting-icon" style="background:#e8f5e9;">2️⃣</div><div><div class="setting-title">Groq API 키</div><div class="setting-desc">Claude 한도 초과 시 자동 전환 · 매일 리셋</div></div></div>
       <div class="setting-right"><div class="setting-value" id="groqStatus">미입력</div><div class="setting-arrow">›</div></div>
     </div>
 
     <div class="divider"></div>
     <div class="section-label">모드 설정</div>
     <div class="setting-row">
-      <div class="setting-left"><div class="setting-icon" style="background:#e3f2fd;">💼</div><div><div class="setting-title">업무 응답 제안</div><div class="setting-desc">업무 대화 중 자동 켜짐</div></div></div>
+      <div class="setting-left"><div class="setting-icon" style="background:#e3f2fd;">💼</div><div><div class="setting-title">업무 힌트 보기</div><div class="setting-desc">업무 대화 중 자동 켜짐</div></div></div>
       <div class="toggle on" id="toggleWork" onclick="toggleSetting('work')"></div>
     </div>
     <div class="setting-row">
@@ -939,8 +934,8 @@ body.dark .close-btn { background: #141414; color: #777777; }
 
   // API 키 상태 표시
   function updateKeyStatus() {
-    const keys = { gemini: 'suho_gemini', openrouter: 'suho_openrouter', groq: 'suho_groq', claude: 'suho_claude', chatgpt: 'suho_chatgpt' };
-    const ids = { gemini: 'geminiStatus', openrouter: 'orStatus', groq: 'groqStatus', claude: 'claudeStatus', chatgpt: 'chatgptStatus' };
+    const keys = { claude: 'suho_claude', groq: 'suho_groq', chatgpt: 'suho_chatgpt' };
+    const ids = { claude: 'claudeStatus', groq: 'groqStatus', chatgpt: 'chatgptStatus' };
     Object.keys(keys).forEach(k => {
       const el = document.getElementById(ids[k]);
       if(!el) return;
@@ -952,9 +947,9 @@ body.dark .close-btn { background: #141414; color: #777777; }
 
   // API 키 입력 모달
   function openKeyModal(type) {
-    const labels = { gemini: 'Gemini API 키', openrouter: 'OpenRouter API 키', groq: 'Groq API 키', claude: 'Claude API 키', chatgpt: 'ChatGPT API 키' };
-    const placeholders = { gemini: 'AIza...', openrouter: 'sk-or-...', groq: 'gsk_...', claude: 'sk-ant-...', chatgpt: 'sk-...' };
-    const links = { gemini: 'https://aistudio.google.com/apikey', openrouter: 'https://openrouter.ai/keys', groq: 'https://console.groq.com/keys', claude: 'https://console.anthropic.com/', chatgpt: 'https://platform.openai.com/api-keys' };
+    const labels = { claude: 'Claude API 키', groq: 'Groq API 키', chatgpt: 'ChatGPT API 키' };
+    const placeholders = { claude: 'sk-ant-...', groq: 'gsk_...', chatgpt: 'sk-...' };
+    const links = { claude: 'https://console.anthropic.com/', groq: 'https://console.groq.com/keys', chatgpt: 'https://platform.openai.com/api-keys' };
     const saved = localStorage.getItem('suho_' + type) || '';
     showModal(`
       <div style="font-size:15px;font-weight:600;margin-bottom:6px;">${labels[type]}</div>
