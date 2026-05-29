@@ -648,9 +648,8 @@ body {
 
 형식:
 [신호] 초록/노랑/빨강 중 하나
-[요약] 핵심 내용 1~2줄. 모든 영어단어 전문용어 업무용어를 한 단어 쉬운 한국어로 교체해줘. 절대 설명하지 마. 그냥 단어만 바꿔. 예: KPI→성과지표, OKR→목표관리, 마이그레이션→시스템이전, 스테이크홀더→관계자, 애자일→유연하게, MVP→최소버전, 덱→발표자료, 레거시→구식, 싱크→공유, 얼라인→방향맞추기, 리소스→인력, 드래프트→초안, 컨펌→확인, 온보딩→적응, ROI→수익률
-[대답] 업무 상황에 맞는 응답 1문장. 필요하면 확인 질문 포함. 예: "네 확인하겠습니다. 혹시 마감이 언제까지인가요?" 한국어만.
-[맥락] 상대 감정이나 상황 한 줄. 한국어만.`
+[요약] 상대방이 실제로 한 말만 1~2줄로 요약해줘. 추측하거나 없는 내용 추가하지 마. 모든 영어단어 전문용어 업무용어를 한 단어 쉬운 한국어로 교체해줘. 예: KPI→성과지표, OKR→목표관리, 마이그레이션→시스템이전, 스테이크홀더→관계자, 애자일→유연하게, MVP→최소버전, 덱→발표자료, 레거시→구식, 싱크→공유, 얼라인→방향맞추기, 리소스→인력, 드래프트→초안, 컨펌→확인, 온보딩→적응, ROI→수익률
+[대답] 이렇게 대답해봐: (실제 대답 예시 1문장. 모르는 부분은 되묻기 포함. 한국어만.)`
 :
 `다음은 상대방이 한 말이야. 반드시 한국어로만 답해줘. 아래 형식으로만 답해줘. 다른 말은 절대 하지 마.
 
@@ -658,9 +657,8 @@ body {
 
 형식:
 [신호] 초록/노랑/빨강 중 하나
-[요약] 핵심 내용 1~2줄. 쉬운 한국어로.
-[대답] 자연스러운 일상 대화 응답 1문장. 되묻기 없이 자연스럽게. 한국어만.
-[맥락] 상대 감정이나 상황 한 줄. 한국어만.`;
+[요약] 상대방이 실제로 한 말만 1~2줄로 요약. 추측하거나 없는 내용 추가하지 마. 쉬운 한국어로.
+[대답] 이렇게 대답해봐: (자연스러운 일상 대화 응답 1문장. 되묻기 없이. 한국어만.)`;
 
 
     let result = null;
@@ -764,12 +762,10 @@ body {
     let signal = 'green';
     let summary = '';
     let reply = '';
-    let context = '';
 
     const signalMatch = text.match(/\[신호\]\s*(.+)/);
     const summaryMatch = text.match(/\[요약\]\s*([\s\S]+?)(?=\[대답\]|\[맥락\]|\[용어\]|$)/);
     const replyMatch = text.match(/\[대답\]\s*([\s\S]+?)(?=\[맥락\]|\[용어\]|\[신호\]|$)/);
-    const contextMatch = text.match(/\[맥락\]\s*([\s\S]+?)(?=\[|$)/);
 
     if(signalMatch) {
       const val = signalMatch[1];
@@ -780,7 +776,6 @@ body {
 
     if(summaryMatch) summary = summaryMatch[1].trim();
     if(replyMatch) reply = replyMatch[1].trim();
-    if(contextMatch) context = contextMatch[1].trim();
 
     if(!summary && !reply) summary = text.slice(0, 150);
 
@@ -788,7 +783,7 @@ body {
 
     if(displayMode) {
       if(summary) {
-        document.getElementById('summaryText').textContent = summary + (context ? '\n' + context : '');
+        document.getElementById('summaryText').textContent = summary;
         document.getElementById('summary').classList.add('visible');
       }
       if(reply) {
