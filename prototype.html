@@ -35,7 +35,7 @@
   .mode-btn.on { border-color:rgba(0,255,136,0.4); color:var(--green); }
 
   /* 자막 */
-  .subtitle { position:absolute; top:60px; left:20px; right:90px; height:100px; overflow-y:scroll; font-size:11px; color:var(--green-dim); line-height:1.6; opacity:0; transition:opacity 0.3s; word-break:keep-all; white-space:normal; }
+  .subtitle { position:absolute; top:60px; left:20px; right:90px; height:100px; overflow-y:scroll; font-size:13px; color:var(--green-dim); line-height:1.6; opacity:0; transition:opacity 0.3s; word-break:keep-all; white-space:normal; }
   .subtitle.visible { opacity:1; }
 
   /* 결과 */
@@ -45,7 +45,7 @@
   .summary { opacity:0; transition:all 0.4s; transform:translateY(8px); flex-shrink:0; }
   .summary.visible { opacity:1; transform:translateY(0); }
   .section-label { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--green-dim); letter-spacing:0.2em; margin-bottom:6px; }
-  .summary-text { font-size:12px; color:var(--green); line-height:1.8; border-left:1px solid var(--green-faint); padding-left:12px; }
+  .summary-text { font-size:14px; color:var(--green); line-height:1.8; border-left:1px solid var(--green-faint); padding-left:12px; }
 
   /* 힌트 버튼 */
   .hint-btn { display:none; margin-top:8px; padding:6px 12px; border:1px solid rgba(0,255,136,0.2); border-radius:4px; cursor:pointer; width:fit-content; font-family:'Share Tech Mono',monospace; font-size:9px; color:rgba(0,255,136,0.4); letter-spacing:0.1em; }
@@ -54,7 +54,7 @@
   /* REPLY */
   .reply { opacity:0; transition:all 0.4s; transform:translateY(8px); flex-shrink:0; }
   .reply.visible { opacity:1; transform:translateY(0); }
-  .reply-text { font-size:12px; color:var(--green); line-height:1.8; padding:10px 12px; border:1px solid var(--green-faint); background:rgba(0,255,136,0.04); }
+  .reply-text { font-size:14px; color:var(--green); line-height:1.8; padding:10px 12px; border:1px solid var(--green-faint); background:rgba(0,255,136,0.04); }
 
   /* ANALYZING */
   .loading { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--green-dim); letter-spacing:0.2em; opacity:0; transition:opacity 0.3s; }
@@ -184,8 +184,14 @@
         <div class="settings-row-sub">Claude 한도 초과 시 자동 전환 · 매일 리셋</div>
       </div>
     </div>
-    <input class="settings-input" id="groqKeyInput" type="password" placeholder="gsk_..." />
-    <a class="settings-link" onclick="window.open('https://console.groq.com/keys')">발급하러 가기 →</a>
+    <div class="settings-row" style="margin-top:12px;">
+      <div>
+        <div class="settings-row-text">ElevenLabs (TTS)</div>
+        <div class="settings-row-sub">자연스러운 목소리 · 월 1만자 무료</div>
+      </div>
+    </div>
+    <input class="settings-input" id="elevenKeyInput" type="password" placeholder="sk_..." />
+    <a class="settings-link" onclick="window.open('https://elevenlabs.io/app/settings/api-keys')">발급하러 가기 →</a>
   </div>
 
   <div class="settings-section">
@@ -208,6 +214,7 @@
   // 상태
   let claudeKey = '';
   let groqKey = '';
+  let elevenKey = '';
   let ttsVolume = 0.6;
   let soundMode = true;
   let displayMode = true;
@@ -228,6 +235,7 @@
   window.onload = () => {
     claudeKey = localStorage.getItem('suho_claude') || '';
     groqKey = localStorage.getItem('suho_groq') || '';
+    elevenKey = localStorage.getItem('suho_eleven') || '';
     ttsVolume = parseFloat(localStorage.getItem('suho_volume') || '0.6');
     initSpeech();
     if('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
@@ -526,10 +534,35 @@
     }
   }
 
-  // TTS
-  function speak(text) {
+  // TTS — ElevenLabs 우선, 없으면 브라우저 기본
+  async function speak(text) {
     if(!soundMode) return;
     synth.cancel();
+
+    if(elevenKey) {
+      try {
+        const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'xi-api-key': elevenKey },
+          body: JSON.stringify({ text, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75 } })
+        });
+        if(res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audio.volume = ttsVolume;
+          document.getElementById('ttsIndicator').classList.add('visible');
+          audio.onended = () => {
+            document.getElementById('ttsIndicator').classList.remove('visible');
+            URL.revokeObjectURL(url);
+          };
+          audio.play();
+          return;
+        }
+      } catch(e) { console.log('ElevenLabs 오류:', e); }
+    }
+
+    // 브라우저 기본 TTS 폴백
     const utt = new SpeechSynthesisUtterance(text);
     utt.lang = 'ko-KR';
     utt.rate = 0.9;
@@ -581,6 +614,7 @@
   function openSettings() {
     document.getElementById('claudeKeyInput').value = localStorage.getItem('suho_claude') || '';
     document.getElementById('groqKeyInput').value = localStorage.getItem('suho_groq') || '';
+    document.getElementById('elevenKeyInput').value = localStorage.getItem('suho_eleven') || '';
     const vol = Math.round(ttsVolume * 100);
     document.getElementById('volumeSlider').value = vol;
     document.getElementById('volumeLabel').textContent = vol + '%';
@@ -601,8 +635,10 @@
   function saveSettings() {
     const c = document.getElementById('claudeKeyInput').value.trim();
     const g = document.getElementById('groqKeyInput').value.trim();
+    const e = document.getElementById('elevenKeyInput').value.trim();
     if(c) { claudeKey = c; localStorage.setItem('suho_claude', c); }
     if(g) { groqKey = g; localStorage.setItem('suho_groq', g); }
+    if(e) { elevenKey = e; localStorage.setItem('suho_eleven', e); }
     localStorage.setItem('suho_volume', ttsVolume);
     closeSettings();
     showWarning('저장됐어 ✓');
