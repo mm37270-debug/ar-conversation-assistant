@@ -119,6 +119,9 @@ body {
   font-size: 11px; font-weight: 300; color: var(--green-dim);
   line-height: 1.6; opacity: 0; transition: opacity 0.3s;
   max-height: 54px; overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
 }
 .subtitle.visible { opacity: 1; }
 
@@ -613,9 +616,7 @@ body {
 
   function showSubtitle(text) {
     const el = document.getElementById('subtitle');
-    // 최신 내용이 보이게 뒤에서 자르기
-    const maxLen = 80;
-    el.textContent = text.length > maxLen ? '...' + text.slice(-maxLen) : text;
+    el.textContent = text;
     el.classList.add('visible');
   }
 
@@ -643,23 +644,22 @@ body {
     const isWork = workKeywords.some(w => fullTranscript.includes(w));
 
     const prompt = isWork ?
-`다음은 상대방이 한 말이야. 반드시 순수 한국어로만 답해줘. 한자, 영어 절대 금지. 아래 형식으로만 답해줘.
+`상대방이 나(신입 직원)에게 한 말이야. 순수 한국어로만 답해. 한자·영어 절대 금지.
 
 상대방 말: "${fullTranscript.trim()}"
 
-형식:
-[신호] 초록/노랑/빨강 중 하나
-[요약] 상대방이 실제로 한 말만 1~2줄. 추측이나 없는 내용 추가 금지. 모든 영어/업무용어를 쉬운 한국어로 바꿔줘. 예: KPI→성과지표, OKR→목표관리, 마이그레이션→시스템이전, 스테이크홀더→관계자, 애자일→빠르게, MVP→최소버전, 덱→발표자료, 레거시→구식, 싱크→공유회의, 얼라인→방향맞추기, 리소스→인력, 드래프트→초안, 컨펌→확인, 온보딩→적응, ROI→수익률, PMO→프로젝트관리자, 스프린트→개발주기, 에스컬레이션→상위보고, 마일스톤→주요일정, 리바이스→수정
-[대답] 이렇게 대답해봐: 신입 직장인 응답 1~2문장. 규칙: 1) 말에 이미 있는 정보는 다시 묻지 마. 2) 말에 없는 정보만 물어봐 (주로 마감, 보고기준, 구체적 내용). 3) 역할을 위임받았으면 "어떤 상황일 때 보고드리면 될까요?" 물어봐. 4) "그럼 저는 ~하면 될까요?" 형식으로 시작. 5) 한국어만, 한자/영어 절대 금지.`
+답변 형식 (이것만):
+[신호] 초록/노랑/빨강
+[요약] 상대방이 나에게 시킨 일이 뭔지 1줄. 배경 설명(왜 그런지)은 필요할때만 짧게. 업무용어는 쉬운 말로: KPI→성과지표 OKR→목표관리 마이그레이션→시스템이전 스테이크홀더→관계자 애자일→빠르게 MVP→최소버전 덱→발표자료 레거시→구식 싱크→공유회의 얼라인→방향맞추기 리소스→인력 드래프트→초안 컨펌→확인 ROI→수익률 PMO→프로젝트관리자 에스컬레이션→상위보고 마일스톤→주요일정 리바이스→수정
+[대답] 이렇게 대답해봐: "그럼 저는 ~하면 될까요?" 로 시작. 말에 없는 정보만 1가지 물어봐. 주로: 마감이 언제인지 / 어떤 내용을 담을지 / 역할위임이면 어떤 상황일 때 보고드리면 되는지. 말에 이미 있는 건 묻지 마. 1~2문장.`
 :
-`다음은 상대방이 한 말이야. 반드시 한국어로만 답해줘. 아래 형식으로만 답해줘. 다른 말은 절대 하지 마.
+`상대방이 한 말이야. 한국어로만 답해.
 
 상대방 말: "${fullTranscript.trim()}"
 
-형식:
-[신호] 초록/노랑/빨강 중 하나
-[요약] 상대방이 실제로 한 말만 1~2줄로 요약. 추측하거나 없는 내용 추가하지 마. 쉬운 한국어로.
-[대답] 이렇게 대답해봐: (자연스러운 일상 대화 응답 1문장. 되묻기 없이. 한국어만.)`;
+[신호] 초록/노랑/빨강
+[요약] 핵심 1줄. 쉬운 한국어로.
+[대답] 이렇게 대답해봐: 자연스러운 일상 응답 1문장. 되묻기 없이.`;
 
 
     let result = null;
@@ -685,6 +685,8 @@ body {
 
     parseAndDisplay(result);
     showLoading(false);
+    // 분석 완료 → 자막 숨기기
+    document.getElementById('subtitle').classList.remove('visible');
   }
 
   async function callGemini(prompt) {
