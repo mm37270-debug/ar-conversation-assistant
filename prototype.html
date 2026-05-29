@@ -169,26 +169,24 @@
 
   <div class="settings-section">
     <div class="settings-section-title">API 키</div>
+
     <div class="settings-row">
-      <div>
-        <div class="settings-row-text">Claude (우선)</div>
-        <div class="settings-row-sub">제일 잘 함 · 유료</div>
-      </div>
+      <div><div class="settings-row-text">Claude (우선)</div><div class="settings-row-sub">제일 잘 함 · 유료</div></div>
+      <div style="font-size:10px;color:var(--green-dim);" id="claudeStatus">미입력</div>
     </div>
     <input class="settings-input" id="claudeKeyInput" type="password" placeholder="sk-ant-..." />
     <a class="settings-link" onclick="window.open('https://console.anthropic.com/')">발급하러 가기 →</a>
 
     <div class="settings-row" style="margin-top:12px;">
-      <div>
-        <div class="settings-row-text">Groq (백업)</div>
-        <div class="settings-row-sub">Claude 한도 초과 시 자동 전환 · 매일 리셋</div>
-      </div>
+      <div><div class="settings-row-text">Groq (백업)</div><div class="settings-row-sub">Claude 한도 초과 시 자동 전환 · 매일 리셋</div></div>
+      <div style="font-size:10px;color:var(--green-dim);" id="groqStatus">미입력</div>
     </div>
+    <input class="settings-input" id="groqKeyInput" type="password" placeholder="gsk_..." />
+    <a class="settings-link" onclick="window.open('https://console.groq.com/keys')">발급하러 가기 →</a>
+
     <div class="settings-row" style="margin-top:12px;">
-      <div>
-        <div class="settings-row-text">ElevenLabs (TTS)</div>
-        <div class="settings-row-sub">자연스러운 목소리 · 월 1만자 무료</div>
-      </div>
+      <div><div class="settings-row-text">ElevenLabs (TTS)</div><div class="settings-row-sub">자연스러운 목소리 · 월 1만자 무료</div></div>
+      <div style="font-size:10px;color:var(--green-dim);" id="elevenStatus">미입력</div>
     </div>
     <input class="settings-input" id="elevenKeyInput" type="password" placeholder="sk_..." />
     <a class="settings-link" onclick="window.open('https://elevenlabs.io/app/settings/api-keys')">발급하러 가기 →</a>
@@ -612,9 +610,15 @@
 
   // 설정
   function openSettings() {
-    document.getElementById('claudeKeyInput').value = localStorage.getItem('suho_claude') || '';
-    document.getElementById('groqKeyInput').value = localStorage.getItem('suho_groq') || '';
-    document.getElementById('elevenKeyInput').value = localStorage.getItem('suho_eleven') || '';
+    const c = localStorage.getItem('suho_claude') || '';
+    const g = localStorage.getItem('suho_groq') || '';
+    const e = localStorage.getItem('suho_eleven') || '';
+    document.getElementById('claudeKeyInput').value = c;
+    document.getElementById('groqKeyInput').value = g;
+    document.getElementById('elevenKeyInput').value = e;
+    document.getElementById('claudeStatus').textContent = c ? '✓ 입력됨' : '미입력';
+    document.getElementById('groqStatus').textContent = g ? '✓ 입력됨' : '미입력';
+    document.getElementById('elevenStatus').textContent = e ? '✓ 입력됨' : '미입력';
     const vol = Math.round(ttsVolume * 100);
     document.getElementById('volumeSlider').value = vol;
     document.getElementById('volumeLabel').textContent = vol + '%';
