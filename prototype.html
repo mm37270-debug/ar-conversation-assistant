@@ -540,6 +540,22 @@ body {
       }
     };
 
+    recognition.onsoundstart = () => {
+      if(inputMode === 'auto' && !isSpeaking) {
+        isSpeaking = true;
+        clearTimeout(silenceTimer);
+      }
+    };
+
+    recognition.onsoundend = () => {
+      if(inputMode === 'auto') {
+        silenceTimer = setTimeout(() => {
+          isSpeaking = false;
+          if(fullTranscript.trim().length > 5) analyzeNow();
+        }, 1500);
+      }
+    };
+
     recognition.onerror = (e) => {
       if(e.error !== 'no-speech') { stopMic(); }
     };
@@ -549,65 +565,19 @@ body {
     };
   }
 
-  // VAD 관련 변수
-  let audioContext = null;
-  let analyser = null;
-  let vadStream = null;
-  let vadTimer = null;
+  // VAD 관련 변수 (onsoundstart/end 방식으로 변경)
   let isSpeaking = false;
   let silenceTimer = null;
-  const VOLUME_THRESHOLD = 20; // 볼륨 임계값 (0~255)
-  const SILENCE_DELAY = 1500; // 침묵 1.5초 후 분석
 
-  async function startVAD() {
-    try {
-      vadStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioContext.createMediaStreamSource(vadStream);
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 512;
-      source.connect(analyser);
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-      function checkVolume() {
-        analyser.getByteFrequencyData(dataArray);
-        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-
-        if(avg > VOLUME_THRESHOLD) {
-          // 말하고 있음
-          if(!isSpeaking) {
-            isSpeaking = true;
-            if(!isRecording) startMic();
-          }
-          clearTimeout(silenceTimer);
-          silenceTimer = setTimeout(() => {
-            // 침묵 감지 → 분석
-            isSpeaking = false;
-            if(fullTranscript.trim().length > 5) {
-              analyzeNow();
-            }
-          }, SILENCE_DELAY);
-        }
-
-        if(inputMode === 'auto') {
-          vadTimer = requestAnimationFrame(checkVolume);
-        }
-      }
-
-      checkVolume();
-    } catch(e) {
-      showWarning('마이크 접근 실패. 권한을 확인해봐.');
-    }
+  function startVAD() {
+    // Web Speech API 이벤트 기반으로 처리 — 별도 마이크 불필요
+    startMic();
   }
 
   function stopVAD() {
-    if(vadTimer) cancelAnimationFrame(vadTimer);
     if(silenceTimer) clearTimeout(silenceTimer);
-    if(vadStream) vadStream.getTracks().forEach(t => t.stop());
-    if(audioContext) audioContext.close();
-    audioContext = null; analyser = null; vadStream = null;
     isSpeaking = false;
+    stopMic();
   }
 
   function startMic() {
