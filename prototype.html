@@ -185,11 +185,17 @@
     <a class="settings-link" onclick="window.open('https://console.groq.com/keys')">발급하러 가기 →</a>
 
     <div class="settings-row" style="margin-top:12px;">
-      <div><div class="settings-row-text">ElevenLabs (TTS)</div><div class="settings-row-sub">자연스러운 목소리 · 월 1만자 무료</div></div>
+      <div><div class="settings-row-text">ElevenLabs (TTS)</div><div class="settings-row-sub">자연스러운 목소리 · Starter 플랜부터</div></div>
       <div style="font-size:10px;color:var(--green-dim);" id="elevenStatus">미입력</div>
     </div>
     <input class="settings-input" id="elevenKeyInput" type="password" placeholder="sk_..." />
     <a class="settings-link" onclick="window.open('https://elevenlabs.io/app/settings/api-keys')">발급하러 가기 →</a>
+
+    <div class="settings-row" style="margin-top:12px;">
+      <div><div class="settings-row-text">목소리 ID</div><div class="settings-row-sub">ElevenLabs Voices에서 ID 복사</div></div>
+    </div>
+    <input class="settings-input" id="voiceIdInput" type="text" placeholder="aiUUgjHa4mpHf6UenZuf" />
+    <a class="settings-link" onclick="window.open('https://elevenlabs.io/app/voice-library')">목소리 찾기 →</a>
   </div>
 
   <div class="settings-section">
@@ -213,6 +219,7 @@
   let claudeKey = '';
   let groqKey = '';
   let elevenKey = '';
+  let voiceId = 'aiUUgjHa4mpHf6UenZuf'; // 기본 목소리
   let ttsVolume = 0.6;
   let soundMode = true;
   let displayMode = true;
@@ -234,6 +241,7 @@
     claudeKey = localStorage.getItem('suho_claude') || '';
     groqKey = localStorage.getItem('suho_groq') || '';
     elevenKey = localStorage.getItem('suho_eleven') || '';
+    voiceId = localStorage.getItem('suho_voice_id') || '8jHHF8rMqMlg8if2mOUe';
     ttsVolume = parseFloat(localStorage.getItem('suho_volume') || '0.6');
     initSpeech();
     if('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
@@ -539,7 +547,7 @@
 
     if(elevenKey) {
       try {
-        const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/8jHHF8rMqMlg8if2mOUe', {
+        const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
           method: 'POST',
           headers: {
             'Accept': 'audio/mpeg',
@@ -617,9 +625,11 @@
     const c = localStorage.getItem('suho_claude') || '';
     const g = localStorage.getItem('suho_groq') || '';
     const e = localStorage.getItem('suho_eleven') || '';
+    const v = localStorage.getItem('suho_voice_id') || 'aiUUgjHa4mpHf6UenZuf';
     document.getElementById('claudeKeyInput').value = c;
     document.getElementById('groqKeyInput').value = g;
     document.getElementById('elevenKeyInput').value = e;
+    document.getElementById('voiceIdInput').value = v;
     document.getElementById('claudeStatus').textContent = c ? '✓ 입력됨' : '미입력';
     document.getElementById('groqStatus').textContent = g ? '✓ 입력됨' : '미입력';
     document.getElementById('elevenStatus').textContent = e ? '✓ 입력됨' : '미입력';
@@ -644,9 +654,11 @@
     const c = document.getElementById('claudeKeyInput').value.trim();
     const g = document.getElementById('groqKeyInput').value.trim();
     const e = document.getElementById('elevenKeyInput').value.trim();
+    const v = document.getElementById('voiceIdInput').value.trim();
     if(c) { claudeKey = c; localStorage.setItem('suho_claude', c); }
     if(g) { groqKey = g; localStorage.setItem('suho_groq', g); }
     if(e) { elevenKey = e; localStorage.setItem('suho_eleven', e); }
+    if(v) { voiceId = v; localStorage.setItem('suho_voice_id', v); }
     localStorage.setItem('suho_volume', ttsVolume);
     closeSettings();
     showWarning('저장됐어 ✓');
